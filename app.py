@@ -12,7 +12,7 @@ import os
 import shutil
 import sys
 from pathlib import Path
-from typing import List, Optional, Set
+from typing import Callable, List, Optional, Set
 
 import make_cards
 import make_lotto
@@ -21,6 +21,7 @@ from PIL import Image, ImageDraw, ImageFont
 from pdf_utils import (
     ARASAAC_CREDIT,
     IMAGE_EXTS,
+    carry_arasaac_record,
     open_file,
     record_arasaac_image,
     safe_stem,
@@ -565,7 +566,7 @@ class LottoPreviewWorker(QThread):
         self.ready.emit(render_lotto_preview(self.images, self.page_index))
 
 
-class LottoSearchWorker(QThread):
+class ArasaacSearchWorker(QThread):
     """Fetch ARASAAC search results + 300 px thumbnails for a query."""
 
     results = Signal(list)  # list[dict] with thumb_bytes filled in
@@ -596,7 +597,7 @@ class LottoSearchWorker(QThread):
             self.error.emit(str(exc))
 
 
-class LottoDownloadWorker(QThread):
+class ArasaacDownloadWorker(QThread):
     """Download a single pictogram PNG and save it to the session directory."""
 
     done = Signal(str)  # path to saved file
@@ -621,8 +622,10 @@ class LottoDownloadWorker(QThread):
             data = arasaac.fetch_image(self.pic_id, resolution=500)
             stem = safe_stem(self.label)
             dest = self.session_path / f"{stem}.png"
-            if dest.exists():
-                dest = self.session_path / f"{stem}_{self.pic_id}.png"
+            counter = 2
+            while dest.exists():
+                dest = self.session_path / f"{stem}__{counter}.png"
+                counter += 1
             dest.write_bytes(data)
             record_arasaac_image(dest, self.pic_id)
             self.done.emit(str(dest))
@@ -822,6 +825,154 @@ class ImageDropList(QListWidget):
 
 
 # ── Lotto tab ──────────────────────────────────────────────────────────────────
+class PictogramSearchPanel(QWidget):
+    """ARASAAC search box and results that download picks into a session.
+
+    Shared by the Cards and Lotto tabs. *session_getter* returns the session to
+    download into, or None when no session is selected. Emits ``downloaded``
+    with the saved path once each image is written (and recorded in the
+    session's ARASAAC manifest by the worker).
+    """
+
+    downloaded = Signal(str)
+
+    def __init__(
+        self,
+        session_getter: Callable[[], Optional[Path]],
+        parent: Optional[QWidget] = None,
+    ):
+        super().__init__(parent)
+        self._session_getter = session_getter
+        self._search_worker: Optional[ArasaacSearchWorker] = None
+        self._download_workers: Set[ArasaacDownloadWorker] = set()
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        sep_lbl = QLabel("Search Pictograms")
+        sep_lbl.setStyleSheet("font-weight: bold; font-size: 13px; padding: 8px 0 2px;")
+        layout.addWidget(sep_lbl)
+
+        search_row = QHBoxLayout()
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Search in English or Norwegian…")
+        self.search_input.returnPressed.connect(self._do_search)
+        search_row.addWidget(self.search_input, stretch=1)
+        self.search_btn = QPushButton("Search")
+        self.search_btn.clicked.connect(self._do_search)
+        search_row.addWidget(self.search_btn)
+        layout.addLayout(search_row)
+
+        self.search_status = QLabel("")
+        self.search_status.setStyleSheet("color: gray; font-size: 11px;")
+        self.search_status.setWordWrap(True)
+        layout.addWidget(self.search_status)
+
+        self.result_list = QListWidget()
+        self.result_list.setIconSize(QSize(70, 70))
+        self.result_list.setViewMode(QListWidget.ViewMode.IconMode)
+        self.result_list.setResizeMode(QListWidget.ResizeMode.Adjust)
+        self.result_list.setSpacing(4)
+        self.result_list.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
+        self.result_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.result_list.customContextMenuRequested.connect(self._result_context_menu)
+        layout.addWidget(self.result_list, stretch=1)
+
+        self.add_btn = QPushButton("Add selected to session")
+        self.add_btn.setEnabled(False)
+        self.add_btn.clicked.connect(self._add_selected)
+        layout.addWidget(self.add_btn)
+
+    # ── Search ─────────────────────────────────────────────────────────────────
+
+    def _do_search(self) -> None:
+        query = self.search_input.text().strip()
+        if not query or self._search_worker is not None:
+            return
+        self.search_btn.setEnabled(False)
+        self.result_list.clear()
+        self.add_btn.setEnabled(False)
+        self.search_status.setText("Searching…")
+
+        worker = ArasaacSearchWorker(query)
+        worker.results.connect(self._on_search_results)
+        worker.error.connect(self._on_search_error)
+        worker.finished.connect(self._on_search_finished)
+        worker.finished.connect(worker.deleteLater)
+        self._search_worker = worker
+        worker.start()
+
+    def _on_search_finished(self) -> None:
+        self._search_worker = None
+        self.search_btn.setEnabled(True)
+
+    def _on_search_results(self, results: list) -> None:
+        self.result_list.clear()
+        if not results:
+            self.search_status.setText("No results.")
+            return
+        self.search_status.setText(f"{len(results)} result(s)")
+        for r in results:
+            item = QListWidgetItem(r["label"])
+            item.setData(Qt.ItemDataRole.UserRole, r)
+            if r.get("thumb_bytes"):
+                pix = QPixmap()
+                pix.loadFromData(r["thumb_bytes"])
+                if not pix.isNull():
+                    item.setIcon(QIcon(pix))
+            item.setSizeHint(QSize(110, 120))
+            self.result_list.addItem(item)
+        self.add_btn.setEnabled(True)
+
+    def _on_search_error(self, msg: str) -> None:
+        self.search_status.setText(f"Error: {msg}")
+
+    # ── Download ───────────────────────────────────────────────────────────────
+
+    def _result_context_menu(self, pos) -> None:
+        item = self.result_list.itemAt(pos)
+        if item is None:
+            return
+        menu = QMenu(self)
+        add_action = menu.addAction("Add to session")
+        if menu.exec(self.result_list.mapToGlobal(pos)) == add_action:
+            session = self._session_or_warn()
+            if session is not None:
+                r = item.data(Qt.ItemDataRole.UserRole)
+                self._start_download(session, r["id"], r["label"])
+
+    def _add_selected(self) -> None:
+        session = self._session_or_warn()
+        if session is None:
+            return
+        for item in self.result_list.selectedItems():
+            r = item.data(Qt.ItemDataRole.UserRole)
+            self._start_download(session, r["id"], r["label"])
+
+    def _session_or_warn(self) -> Optional[Path]:
+        session = self._session_getter()
+        if session is None:
+            QMessageBox.warning(
+                self, "No session", "Please select or create a session first."
+            )
+        return session
+
+    def _start_download(self, session: Path, pic_id: int, label: str) -> None:
+        worker = ArasaacDownloadWorker(pic_id, label, session)
+        worker.done.connect(self._on_download_done)
+        worker.error.connect(self._on_download_error)
+        worker.finished.connect(lambda w=worker: self._download_workers.discard(w))
+        worker.finished.connect(worker.deleteLater)
+        self._download_workers.add(worker)
+        worker.start()
+
+    def _on_download_done(self, path: str) -> None:
+        self.downloaded.emit(path)
+
+    def _on_download_error(self, msg: str) -> None:
+        self.search_status.setText(f"Download error: {msg}")
+
+
 class LottoTab(QWidget):
     """Tab for searching ARASAAC pictograms, building lotto sessions, and
     generating board + cut-out PDFs."""
@@ -830,11 +981,9 @@ class LottoTab(QWidget):
         super().__init__(parent)
 
         self.current_lotto_session: Optional[Path] = None
-        self._search_worker: Optional[LottoSearchWorker] = None
         self._board_worker: Optional[LottoBoardWorker] = None
         self._preview_worker: Optional[LottoPreviewWorker] = None
         self._stale_preview_workers: Set[LottoPreviewWorker] = set()
-        self._download_workers: Set[LottoDownloadWorker] = set()
         self._preview_images: List[Path] = []
         self._preview_page: int = 0
         self._preview_total_pages: int = 1
@@ -880,38 +1029,9 @@ class LottoTab(QWidget):
         new_btn.clicked.connect(self._new_session)
         layout.addWidget(new_btn)
 
-        sep_lbl = QLabel("Search Pictograms")
-        sep_lbl.setStyleSheet("font-weight: bold; font-size: 13px; padding: 8px 0 2px;")
-        layout.addWidget(sep_lbl)
-
-        search_row = QHBoxLayout()
-        self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("Search in English or Norwegian…")
-        self.search_input.returnPressed.connect(self._do_search)
-        search_row.addWidget(self.search_input, stretch=1)
-        self.search_btn = QPushButton("Search")
-        self.search_btn.clicked.connect(self._do_search)
-        search_row.addWidget(self.search_btn)
-        layout.addLayout(search_row)
-
-        self.search_status = QLabel("")
-        self.search_status.setStyleSheet("color: gray; font-size: 11px;")
-        layout.addWidget(self.search_status)
-
-        self.result_list = QListWidget()
-        self.result_list.setIconSize(QSize(70, 70))
-        self.result_list.setViewMode(QListWidget.ViewMode.IconMode)
-        self.result_list.setResizeMode(QListWidget.ResizeMode.Adjust)
-        self.result_list.setSpacing(4)
-        self.result_list.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
-        self.result_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.result_list.customContextMenuRequested.connect(self._result_context_menu)
-        layout.addWidget(self.result_list, stretch=2)
-
-        self.add_btn = QPushButton("Add selected to session")
-        self.add_btn.setEnabled(False)
-        self.add_btn.clicked.connect(self._add_selected)
-        layout.addWidget(self.add_btn)
+        self.picto_search = PictogramSearchPanel(lambda: self.current_lotto_session)
+        self.picto_search.downloaded.connect(self._on_download_done)
+        layout.addWidget(self.picto_search, stretch=2)
         return panel
 
     def _build_cards_panel(self) -> QWidget:
@@ -1129,6 +1249,7 @@ class LottoTab(QWidget):
                     )
                 else:
                     img_path.rename(new_path)
+                    carry_arasaac_record(img_path, new_path)
                     self._load_session_images()
         elif action == remove_action:
             if (
@@ -1143,22 +1264,6 @@ class LottoTab(QWidget):
                 img_path.unlink(missing_ok=True)
                 self._refresh_sessions()
                 self._load_session_images()
-
-    def _result_context_menu(self, pos) -> None:
-        item = self.result_list.itemAt(pos)
-        if item is None:
-            return
-        menu = QMenu(self)
-        add_action = menu.addAction("Add to session")
-        action = menu.exec(self.result_list.mapToGlobal(pos))
-        if action == add_action:
-            if self.current_lotto_session is None:
-                QMessageBox.warning(
-                    self, "No session", "Please select or create a session first."
-                )
-                return
-            r = item.data(Qt.ItemDataRole.UserRole)
-            self._start_download(r["id"], r["label"])
 
     # ── Preview ────────────────────────────────────────────────────────────────
 
@@ -1218,82 +1323,11 @@ class LottoTab(QWidget):
             )
         self.lotto_preview_label.setPixmap(pixmap)
 
-    # ── Search ─────────────────────────────────────────────────────────────────
-
-    def _do_search(self) -> None:
-        query = self.search_input.text().strip()
-        if not query or self._search_worker is not None:
-            return
-        self.search_btn.setEnabled(False)
-        self.result_list.clear()
-        self.add_btn.setEnabled(False)
-        self.search_status.setText("Searching…")
-
-        worker = LottoSearchWorker(query)
-        worker.results.connect(self._on_search_results)
-        worker.error.connect(self._on_search_error)
-        worker.finished.connect(self._on_search_finished)
-        worker.finished.connect(worker.deleteLater)
-        self._search_worker = worker
-        worker.start()
-
-    def _on_search_finished(self) -> None:
-        self._search_worker = None
-        self.search_btn.setEnabled(True)
-
-    def _on_search_results(self, results: list) -> None:
-        self.result_list.clear()
-        if not results:
-            self.search_status.setText("No results.")
-            return
-        self.search_status.setText(f"{len(results)} result(s)")
-        for r in results:
-            item = QListWidgetItem(r["label"])
-            item.setData(Qt.ItemDataRole.UserRole, r)
-            if r.get("thumb_bytes"):
-                pix = QPixmap()
-                pix.loadFromData(r["thumb_bytes"])
-                if not pix.isNull():
-                    item.setIcon(QIcon(pix))
-            item.setSizeHint(QSize(110, 120))
-            self.result_list.addItem(item)
-        self.add_btn.setEnabled(True)
-
-    def _on_search_error(self, msg: str) -> None:
-        self.search_status.setText(f"Error: {msg}")
-
-    # ── Add cards ──────────────────────────────────────────────────────────────
-
-    def _add_selected(self) -> None:
-        if self.current_lotto_session is None:
-            QMessageBox.warning(
-                self,
-                "No session",
-                "Please select or create a session first.",
-            )
-            return
-        selected = self.result_list.selectedItems()
-        if not selected:
-            return
-        for item in selected:
-            r = item.data(Qt.ItemDataRole.UserRole)
-            self._start_download(r["id"], r["label"])
-
-    def _start_download(self, pic_id: int, label: str) -> None:
-        worker = LottoDownloadWorker(pic_id, label, self.current_lotto_session)
-        worker.done.connect(self._on_download_done)
-        worker.error.connect(self._on_download_error)
-        worker.finished.connect(lambda w=worker: self._download_workers.discard(w))
-        worker.finished.connect(worker.deleteLater)
-        self._download_workers.add(worker)
-        worker.start()
+    # ── Downloads ──────────────────────────────────────────────────────────────
 
     def _on_download_done(self, _img_path: str) -> None:
         self._refresh_sessions()
         self._load_session_images()
-
-    def _on_download_error(self, msg: str) -> None:
-        self.lotto_status.setText(f"Download error: {msg}")
 
     # ── PDF generation ─────────────────────────────────────────────────────────
 
@@ -1983,7 +2017,7 @@ class MainWindow(QMainWindow):
         splitter.addWidget(self._build_session_panel())
         splitter.addWidget(self._build_image_panel())
         splitter.addWidget(self._build_preview_panel())
-        splitter.setSizes([180, 500, 320])
+        splitter.setSizes([280, 440, 320])
         cards_layout.addWidget(self._build_bottom_bar())
         tabs.addTab(cards_widget, "Cards")
 
@@ -1995,8 +2029,8 @@ class MainWindow(QMainWindow):
 
     def _build_session_panel(self) -> QWidget:
         panel = QWidget()
-        panel.setMinimumWidth(150)
-        panel.setMaximumWidth(240)
+        panel.setMinimumWidth(200)
+        panel.setMaximumWidth(340)
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(0, 0, 6, 0)
 
@@ -2011,7 +2045,15 @@ class MainWindow(QMainWindow):
         btn = QPushButton("+ New session")
         btn.clicked.connect(self._new_session)
         layout.addWidget(btn)
+
+        self.picto_search = PictogramSearchPanel(lambda: self.current_session)
+        self.picto_search.downloaded.connect(self._on_pictogram_downloaded)
+        layout.addWidget(self.picto_search, stretch=2)
         return panel
+
+    def _on_pictogram_downloaded(self, _img_path: str) -> None:
+        self._refresh_sessions()
+        self._load_images()
 
     def _build_image_panel(self) -> QWidget:
         panel = QWidget()
@@ -2255,6 +2297,7 @@ class MainWindow(QMainWindow):
                     )
                 else:
                     img_path.rename(new_path)
+                    carry_arasaac_record(img_path, new_path)
                     self._load_images()
         elif action == duplicate_action:
             counter = 2
@@ -2264,6 +2307,7 @@ class MainWindow(QMainWindow):
                     break
                 counter += 1
             shutil.copy2(img_path, dst)
+            carry_arasaac_record(img_path, dst)
             self._refresh_sessions()
             self._load_images()
         elif action == remove_action:

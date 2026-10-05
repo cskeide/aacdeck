@@ -250,6 +250,25 @@ def record_arasaac_image(image_path: Path, pic_id: int) -> None:
     manifest.write_text(json.dumps(data, indent=2, sort_keys=True), encoding="utf-8")
 
 
+def carry_arasaac_record(src: Path, dst: Path) -> None:
+    """Keep the manifest in step after *src* was renamed or copied to *dst*.
+
+    Call after the file operation: if *src* is gone it was a rename and its
+    entry is dropped; otherwise the copy gets an entry of its own.
+    """
+    manifest = src.parent / ARASAAC_MANIFEST
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    if not isinstance(data, dict) or src.name not in data:
+        return
+    data[dst.name] = data[src.name]
+    if not src.exists():
+        del data[src.name]
+    manifest.write_text(json.dumps(data, indent=2, sort_keys=True), encoding="utf-8")
+
+
 def uses_arasaac(images: list[Path]) -> bool:
     """Return True if any of *images* is listed in its session's ARASAAC manifest."""
     if not images:

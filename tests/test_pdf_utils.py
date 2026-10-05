@@ -215,3 +215,26 @@ def test_record_arasaac_recovers_from_corrupt_manifest(tmp_path):
 
 def test_uses_arasaac_empty_list():
     assert pdf_utils.uses_arasaac([]) is False
+
+
+def test_carry_arasaac_record_on_rename_and_copy(tmp_path):
+    src = tmp_path / "hund.png"
+    src.write_bytes(b"x")
+    pdf_utils.record_arasaac_image(src, 5)
+
+    copy = tmp_path / "hund__2.png"
+    copy.write_bytes(b"x")
+    pdf_utils.carry_arasaac_record(src, copy)
+
+    renamed = tmp_path / "valp.png"
+    src.rename(renamed)
+    pdf_utils.carry_arasaac_record(src, renamed)
+
+    data = json.loads((tmp_path / pdf_utils.ARASAAC_MANIFEST).read_text())
+    assert data == {"hund__2.png": 5, "valp.png": 5}
+
+
+def test_carry_arasaac_record_ignores_own_images(tmp_path):
+    own = tmp_path / "mamma.jpg"
+    pdf_utils.carry_arasaac_record(own, tmp_path / "mor.jpg")
+    assert not (tmp_path / pdf_utils.ARASAAC_MANIFEST).exists()
