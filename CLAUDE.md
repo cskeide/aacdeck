@@ -58,13 +58,15 @@ There is **no version string in the source** — no `__version__`, nothing in `a
 - Supported images: `.jpg`, `.jpeg`, `.png`, `.webp`, `.avif`. Filename stem → card label via `stem_to_label()` (underscores → spaces, `__N` duplicate counter stripped) — used uniformly by all three generators and the GUI previews/lists, so labels match everywhere. All images are decoded by Pillow and converted to RGB PNG before reaching ReportLab.
 - Tegnbanken data is cached at `~/.cache/aacdeck/tegnbanken/data.xml` (7-day TTL), not in the project dir.
 - Optional `descriptions.json` sidecar in a tegnprotokoll session maps `{"stem": "description text"}`.
+- **ARASAAC attribution is a licence requirement (CC BY-NC-SA).** Every ARASAAC download is recorded in the session's `.arasaac.json` sidecar (`pdf_utils.record_arasaac_image`). Lotto PDFs always print `pdf_utils.ARASAAC_CREDIT` in the bottom margin; card PDFs print it only when `uses_arasaac()` finds a recorded image. Any new path that saves ARASAAC images must record them.
 
 ## Gotchas
 
 - **ReportLab uses a bottom-left origin.** Labels are visually at the top of a card but have the *highest* `y` values in drawing code.
 - **Font fallback breaks Norwegian characters.** Priority is Liberation Sans Bold → Arial Bold → DejaVu Sans Bold → Helvetica-Bold; the built-in Helvetica-Bold fallback does **not** render æ/ø/å.
 - **Error-handling differs by module when run as CLI:** `make_cards.py` uses `sys.exit()`; `make_lotto.py`/`make_tegnprotokoll.py` raise `ValueError`. `app.py` accounts for this when calling them as libraries.
-- **PyInstaller onefile** extracts to `sys._MEIPASS`; `app.py` explicitly copies generated PDFs out to the real `BASE_DIR/output/`.
+- **PyInstaller onefile** extracts to `sys._MEIPASS`, so `app.py` always passes `OUTPUT_DIR` to the generators explicitly (their own default resolves inside the temp dir).
+- **`BASE_DIR` differs by mode.** From source it is the project folder; in the packaged app it is `~/Documents/AACdeck` (via `QStandardPaths`). On first launch, `_migrate_legacy_data()` *copies* (never moves) session/output folders from beside the executable — where releases before 2026-10 kept them — unless the new folder already exists.
 
 ## Repo automations (`.claude/`)
 

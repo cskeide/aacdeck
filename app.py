@@ -46,7 +46,7 @@ def _pillow_to_qimage(img: Image.Image) -> "QImage":
     return qimg.copy()
 
 
-from PySide6.QtCore import Qt, QSize, QThread, Signal
+from PySide6.QtCore import QSize, QStandardPaths, Qt, QThread, Signal
 from PySide6.QtGui import QIcon, QImage, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -70,12 +70,24 @@ from PySide6.QtWidgets import (
 )
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-# When frozen by PyInstaller the executable is the reference point; otherwise
-# fall back to this file's directory so "python app.py" works from source.
+# The packaged app keeps user data in ~/Documents/AACdeck: the executable's own
+# folder may be read-only (macOS app translocation), protected (Program Files),
+# or left behind when a new version is downloaded. From source, data stays in
+# the project folder so "python app.py" and the CLIs share sessions.
+def _documents_dir() -> Path:
+    loc = QStandardPaths.writableLocation(
+        QStandardPaths.StandardLocation.DocumentsLocation
+    )
+    return Path(loc) if loc else Path.home() / "Documents"
+
+
 if getattr(sys, "frozen", False):
-    BASE_DIR = Path(sys.executable).parent
+    BASE_DIR = _documents_dir() / "AACdeck"
+    # Releases before 2026-10 stored data next to the executable.
+    _LEGACY_DIR: Optional[Path] = Path(sys.executable).parent
 else:
     BASE_DIR = Path(__file__).resolve().parent
+    _LEGACY_DIR = None
 
 SESSIONS_DIR = BASE_DIR / "sessions"
 LOTTO_SESSIONS_DIR = BASE_DIR / "lotto-sessions"
@@ -1956,6 +1968,11 @@ class MainWindow(QMainWindow):
         tabs = QTabWidget()
         outer.addWidget(tabs, stretch=1)
 
+        data_btn = QPushButton("Open data folder")
+        data_btn.setToolTip(str(BASE_DIR))
+        data_btn.clicked.connect(lambda: open_file(str(BASE_DIR)))
+        tabs.setCornerWidget(data_btn, Qt.Corner.TopRightCorner)
+
         # ── Cards tab (existing layout) ────────────────────────────────────────
         cards_widget = QWidget()
         cards_layout = QVBoxLayout(cards_widget)
@@ -2392,7 +2409,26 @@ def _make_app_icon() -> QIcon:
     return icon
 
 
+def _migrate_legacy_data() -> None:
+    """Copy sessions/output from beside the executable into BASE_DIR, once.
+
+    Copies rather than moves, so a failed or interrupted migration never loses
+    anything. Skipped entirely once BASE_DIR exists.
+    """
+    if _LEGACY_DIR is None or BASE_DIR.exists():
+        return
+    for name in ("sessions", "lotto-sessions", "tegnprotokoll-sessions", "output"):
+        src = _LEGACY_DIR / name
+        if src.is_dir() and any(src.iterdir()):
+            try:
+                shutil.copytree(src, BASE_DIR / name, dirs_exist_ok=True)
+            except OSError as exc:
+                print(f"Warning: could not copy {src} to {BASE_DIR}: {exc}")
+
+
 def main() -> None:
+    _migrate_legacy_data()
+    BASE_DIR.mkdir(parents=True, exist_ok=True)
     app = QApplication(sys.argv)
     app.setApplicationName("AACdeck")
     icon = _make_app_icon()
