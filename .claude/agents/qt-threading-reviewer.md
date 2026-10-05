@@ -1,6 +1,6 @@
 ---
 name: qt-threading-reviewer
-description: Reviews PySide6 threading correctness in app.py — QThread worker classes, signal/slot communication, and anything touching Qt objects off the main thread. Use after adding or modifying a worker, a signal handler, or long-running GUI work.
+description: Reviews PySide6 threading correctness in the GUI (app.py and gui_*.py) — QThread worker classes, signal/slot communication, and anything touching Qt objects off the main thread. Use after adding or modifying a worker, a signal handler, or long-running GUI work.
 tools: Read, Grep, Glob, Bash
 ---
 
@@ -12,7 +12,7 @@ Report findings most-severe first, each with the file:line and a concrete failur
 
 **Only the main (GUI) thread may touch QWidget instances or the QPixmap class.** Worker threads may compute, do I/O, and emit signals; they may not create, read, or mutate widgets, and they may not construct a `QPixmap`.
 
-`app.py` has ~10 `QThread` subclasses (starting around `app.py:475`), all following the same shape: `__init__` stashes plain data, `run()` does the work, results come back via `Signal`. Signal emission across threads is safe — Qt queues the delivery, and the slot runs on the receiver's thread. That part of the design is correct and should be preserved.
+The GUI has ~10 `QThread` subclasses, each defined at the top of the tab module that uses it (`gui_cards.py`, `gui_lotto.py`, `gui_tegnprotokoll.py`, plus the shared ARASAAC workers in `gui_pictograms.py`), all following the same shape: `__init__` stashes plain data, `run()` does the work, results come back via `Signal`. Signal emission across threads is safe — Qt queues the delivery, and the slot runs on the receiver's thread. That part of the design is correct and should be preserved.
 
 ## What to check on every worker
 

@@ -1,6 +1,6 @@
-"""Tests for the packaged app's data-folder migration in app.py.
+"""Tests for the packaged app's data-folder migration in gui_common.py.
 
-Importing app needs PySide6's Qt libraries; skip where they can't load (the CI
+Importing gui_common needs PySide6's Qt libraries; skip where they can't load (the CI
 test job installs no system Qt/XCB libs).
 """
 
@@ -10,7 +10,7 @@ import pytest
 
 pytest.importorskip("PySide6.QtWidgets")
 
-import app
+import gui_common
 
 
 def _legacy(tmp_path):
@@ -26,10 +26,10 @@ def _legacy(tmp_path):
 def test_migration_copies_legacy_data(tmp_path, monkeypatch):
     legacy = _legacy(tmp_path)
     data = tmp_path / "Documents" / "AACdeck"
-    monkeypatch.setattr(app, "_LEGACY_DIR", legacy)
-    monkeypatch.setattr(app, "BASE_DIR", data)
+    monkeypatch.setattr(gui_common, "_LEGACY_DIR", legacy)
+    monkeypatch.setattr(gui_common, "BASE_DIR", data)
 
-    app._migrate_legacy_data()
+    gui_common.migrate_legacy_data()
 
     assert (data / "sessions" / "2026-03-familie" / "mamma.png").exists()
     assert (data / "output" / "2026-03-familie.pdf").exists()
@@ -42,19 +42,19 @@ def test_migration_skipped_when_data_dir_exists(tmp_path, monkeypatch):
     legacy = _legacy(tmp_path)
     data = tmp_path / "Documents" / "AACdeck"
     data.mkdir(parents=True)
-    monkeypatch.setattr(app, "_LEGACY_DIR", legacy)
-    monkeypatch.setattr(app, "BASE_DIR", data)
+    monkeypatch.setattr(gui_common, "_LEGACY_DIR", legacy)
+    monkeypatch.setattr(gui_common, "BASE_DIR", data)
 
-    app._migrate_legacy_data()
+    gui_common.migrate_legacy_data()
 
     assert not (data / "sessions").exists()
 
 
 def test_migration_noop_from_source(tmp_path, monkeypatch):
     data = tmp_path / "data"
-    monkeypatch.setattr(app, "_LEGACY_DIR", None)
-    monkeypatch.setattr(app, "BASE_DIR", data)
+    monkeypatch.setattr(gui_common, "_LEGACY_DIR", None)
+    monkeypatch.setattr(gui_common, "BASE_DIR", data)
 
-    app._migrate_legacy_data()
+    gui_common.migrate_legacy_data()
 
     assert not data.exists()

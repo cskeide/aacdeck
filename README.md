@@ -1,81 +1,54 @@
 # AACdeck
 
-Generates print-ready A4 PDFs of picture cards for AAC/ASK (alternativ og supplerende kommunikasjon). Place your images in a session folder, run the script, and get a PDF ready to print, laminate, and cut.
+Print-ready A4 PDFs for ASK (alternativ og supplerende kommunikasjon) — in Norwegian, ready to print, laminate, and cut:
 
-Each card shows the image with the filename as the label — `stor_bror.jpg` becomes a card labelled **stor bror**.
+- **Cards** — picture cards from your own photos and/or ARASAAC pictograms. `stor_bror.jpg` becomes a card labelled **stor bror**.
+- **Lotto** — search ARASAAC pictograms and get a lotto board plus a matching cut-out sheet.
+- **Sign Protocol** (tegnprotokoll) — search Tegnbanken signs and get a table of sign, illustration, and how the child uses it.
 
-## GUI
+## Download
 
-Run `app.py` for a desktop interface:
+Ready-to-run apps for Windows, macOS, and Linux are on the [Releases page](https://github.com/cskeide/aacdeck/releases/latest) — no Python needed. Download the file for your system and open it.
 
-```bash
-python app.py
-```
+Your sessions and PDFs are kept in **Documents/AACdeck**. The **Open data folder** button in the top-right corner opens it. (Earlier versions kept them next to the app; they are copied over automatically the first time you start a new version.)
 
-The GUI provides:
-- **Sessions panel** — list existing sessions or create a new one
-- **Images panel** — drag-and-drop images into a session, add via file dialog, or right-click to remove
-- **Page preview** — live A4-proportioned preview with page navigation
-- **Generate PDF** button — runs `make_cards` in a background thread and shows an **Open PDF** button when done
+## Using the app
 
-### Standalone executable
+Each tab works the same way:
 
-Build a single-file executable with PyInstaller:
+1. **+ New session** — one session per set of cards, e.g. `2026-04-skole`.
+2. Add images — drag and drop or **Add images…** (Cards), or search and **Add selected to session** (pictograms and signs). Right-click an image to rename, duplicate, or remove it; the label follows the filename.
+3. Check the **Page preview**, then **Generate PDF**.
 
-```bash
-pyinstaller app.spec
-# output: dist/aacdeck
-```
+Cards are sorted alphabetically. Supported formats: `jpg`, `jpeg`, `png`, `webp`, `avif`.
 
-## CLI
+## Credits and licences
 
-```bash
-./make_cards.sh sessions/2026-03-familie
-```
+- Pictograms: Sergio Palao / [ARASAAC](https://arasaac.org), owned by the Government of Aragón — CC BY-NC-SA 4.0. PDFs that contain pictograms print this credit automatically.
+- Sign illustrations: Statped / [tegnbanken.no](https://tegnbanken.no) — CC BY-NC-ND 4.0, credited on every sign-protocol page.
 
-The PDF is saved to `output/2026-03-familie.pdf`.
+Both licences are non-commercial.
 
-Run without arguments to see help:
+## Running from source
 
 ```bash
-./make_cards.sh
+python -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/python app.py
 ```
 
-## Setup
+When run from source, sessions live in the project folder (`sessions/`, `lotto-sessions/`, `tegnprotokoll-sessions/`) and PDFs go to `output/`.
+
+Each tool also has a command-line version:
 
 ```bash
-# Arch Linux
-sudo pacman -S python-pillow python-reportlab pyside6
-
-# or via pip
-pip install -r requirements.txt
+.venv/bin/python make_cards.py sessions/2026-03-familie            # → output/2026-03-familie.pdf
+.venv/bin/python make_lotto.py lotto-sessions/2026-04-dyr          # → output/2026-04-dyr_board.pdf + _cutout.pdf
+.venv/bin/python make_tegnprotokoll.py tegnprotokoll-sessions/bade  # → output/bade_tegnprotokoll.pdf
 ```
 
-## Session folders
-
-Organize images under `sessions/`, one folder per session:
-
-```
-sessions/
-├── 2026-03-familie/
-│   ├── mamma.jpg
-│   ├── pappa.png
-│   └── stor_bror.webp
-└── 2026-04-skole/
-    └── ...
-```
-
-- Supported formats: `jpg`, `jpeg`, `png`, `webp`, `avif`
-- Filename stem (without extension) becomes the card label
-- Underscores in filenames are replaced with spaces
-- Cards are sorted alphabetically within each session
-
-## Output
-
-- A4 page, 3 columns × 4 rows = 12 cards per page
-- Cards are square with a border, label at top, image below
-- PDF is saved to `output/<session-name>.pdf`
+Build the standalone app with `pip install pyinstaller && pyinstaller app.spec` (output: `dist/aacdeck`). See [CLAUDE.md](CLAUDE.md) for development details.
 
 ## License
 
-MIT © 2026 Christian Kronborg Skeide — see [LICENSE](LICENSE) for details.
+MIT © 2026 Christian Kronborg Skeide — see [LICENSE](LICENSE) for details. The pictograms and sign illustrations the app downloads are under their own licences (above).

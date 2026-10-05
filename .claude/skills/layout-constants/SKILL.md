@@ -1,10 +1,10 @@
 ---
 name: layout-constants
-description: Layout constant tables and rendering gotchas for the PDF generators (make_cards, make_lotto, make_tegnprotokoll) and the app.py previews. Load before editing any drawing logic, layout constant, grid geometry, or preview renderer.
+description: Layout constant tables and rendering gotchas for the PDF generators (make_cards, make_lotto, make_tegnprotokoll) and the gui_previews.py previews. Load before editing any drawing logic, layout constant, grid geometry, or preview renderer.
 user-invocable: false
 ---
 
-Background knowledge for changing how PDFs are drawn. Read this before editing `make_cards.py`, `make_lotto.py`, `make_tegnprotokoll.py`, `pdf_utils.py`, or the `render_*_preview` functions in `app.py`.
+Background knowledge for changing how PDFs are drawn. Read this before editing `make_cards.py`, `make_lotto.py`, `make_tegnprotokoll.py`, `pdf_utils.py`, or the `render_*_preview` functions in `gui_previews.py`.
 
 ## Three gotchas that cause most bugs here
 
@@ -12,12 +12,12 @@ Background knowledge for changing how PDFs are drawn. Read this before editing `
 
 **Helvetica-Bold does not render æ/ø/å.** Font priority is Liberation Sans Bold → Arial Bold → DejaVu Sans Bold → Helvetica-Bold, and that last built-in fallback silently mangles Norwegian text. All text must go through `pdf_utils.register_nordic_bold_font()` or `register_nordic_regular_font()`. Never hardcode a font name.
 
-**The preview must not drift from the PDF.** `app.py` renders previews with Pillow in pixels, on a completely separate code path from ReportLab. Shared geometry is therefore *imported*, not copied:
+**The preview must not drift from the PDF.** `gui_previews.py` renders previews with Pillow in pixels, on a completely separate code path from ReportLab. Shared geometry is therefore *imported*, not copied:
 
 ```python
-_PREV_COLS = make_cards.COLS                      # app.py:79
-_LOTTO_PREV_COLS = make_lotto.LOTTO_COLS          # app.py:85
-_TEGN_PREV_COL_FRACS = make_tegnprotokoll.COL_FRACS  # app.py:97
+_PREV_COLS = make_cards.COLS                      # gui_previews.py
+_LOTTO_PREV_COLS = make_lotto.LOTTO_COLS          # gui_previews.py
+_TEGN_PREV_COL_FRACS = make_tegnprotokoll.COL_FRACS  # gui_previews.py
 ```
 
 Keep these as imports. Pixel sizes, gaps, and margins (`_PREV_CARD = 150`, `_PREV_GAP = 6`, `_PREV_MARGIN = 12`, and the `_TEGN_PREV_*` values) are genuinely preview-only and stay as literals.
