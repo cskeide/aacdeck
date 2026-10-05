@@ -6,6 +6,7 @@ make_lotto.py, make_tegnprotokoll.py, and app.py.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import sys
@@ -55,8 +56,6 @@ def to_rgb(img: Image.Image) -> Image.Image:
     return img.convert("RGB")
 
 
-# Keep the private alias so existing callers in this package can use either name.
-_to_rgb = to_rgb
 
 
 # ── Font helpers ───────────────────────────────────────────────────────────────
@@ -220,6 +219,78 @@ def stem_to_label(stem: str) -> str:
     """
     stem = _DUPLICATE_SUFFIX.sub("", stem)
     return stem.replace("_", " ")
+
+
+# ── ARASAAC attribution ────────────────────────────────────────────────────────
+# ARASAAC pictograms are CC BY-NC-SA 4.0, which requires crediting the author
+# and owner on anything that reproduces them.
+
+ARASAAC_CREDIT = (
+    "Piktogrammer: Sergio Palao / ARASAAC (arasaac.org), "
+    "Aragón-regjeringen — CC BY-NC-SA 4.0"
+)
+CREDIT_FONT_PT = 7
+
+# Per-session sidecar listing the filenames that were downloaded from ARASAAC,
+# so a session mixing pictograms with the user's own photos can be credited
+# only when it actually contains a pictogram.
+ARASAAC_MANIFEST = ".arasaac.json"
+
+
+def record_arasaac_image(image_path: Path, pic_id: int) -> None:
+    """Note in the session's manifest that *image_path* came from ARASAAC."""
+    manifest = image_path.parent / ARASAAC_MANIFEST
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            data = {}
+    except (OSError, ValueError):
+        data = {}
+    data[image_path.name] = pic_id
+    manifest.write_text(json.dumps(data, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def carry_arasaac_record(src: Path, dst: Path) -> None:
+    """Keep the manifest in step after *src* was renamed or copied to *dst*.
+
+    Call after the file operation: if *src* is gone it was a rename and its
+    entry is dropped; otherwise the copy gets an entry of its own.
+    """
+    manifest = src.parent / ARASAAC_MANIFEST
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    if not isinstance(data, dict) or src.name not in data:
+        return
+    data[dst.name] = data[src.name]
+    if not src.exists():
+        del data[src.name]
+    manifest.write_text(json.dumps(data, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def uses_arasaac(images: list[Path]) -> bool:
+    """Return True if any of *images* is listed in its session's ARASAAC manifest."""
+    if not images:
+        return False
+    manifest = images[0].parent / ARASAAC_MANIFEST
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(data, dict) and any(p.name in data for p in images)
+
+
+def draw_credit(c: canvas.Canvas, text: str, page_w: float, page_margin: float) -> None:
+    """Draw a small grey centred credit line inside the bottom page margin.
+
+    Cards never extend below *page_margin*, so the line can't overlap them.
+    """
+    font = register_nordic_regular_font("_CreditFont")
+    c.setFont(font, CREDIT_FONT_PT)
+    c.setFillColorRGB(0.55, 0.55, 0.55)
+    c.drawCentredString(page_w / 2, (page_margin - CREDIT_FONT_PT) / 2, text)
+    c.setFillColorRGB(0, 0, 0)
 
 
 # ── PDF opener ─────────────────────────────────────────────────────────────────

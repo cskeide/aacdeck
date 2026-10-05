@@ -143,3 +143,13 @@ def test_make_tegnprotokoll_rejects_empty_session(tmp_path):
     empty.mkdir()
     with pytest.raises(ValueError):
         make_tegnprotokoll.make_tegnprotokoll(str(empty), output_dir=tmp_path / "out")
+
+
+def test_make_cards_with_arasaac_manifest(tmp_path):
+    # A session mixing own photos with a recorded pictogram gets the credit path.
+    from pdf_utils import record_arasaac_image
+
+    session = _make_session(tmp_path, "blandet", n=14)
+    record_arasaac_image(session / "bilde_3.png", 42)
+    out = make_cards.make_cards(str(session), output_dir=tmp_path / "out")
+    _assert_pdf(out)

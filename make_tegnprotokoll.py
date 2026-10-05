@@ -43,8 +43,6 @@ from pdf_utils import (
     stem_to_label,
 )
 
-# Alias kept for any external callers
-_to_rgb = to_rgb
 
 
 # ── Layout constants ───────────────────────────────────────────────────────────

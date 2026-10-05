@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import io
+import json
 
 from PIL import Image
 from reportlab.pdfgen import canvas
 
 import pytest
+
+import pdf_utils
 
 from pdf_utils import (
     IMAGE_EXTS,
@@ -181,3 +184,57 @@ def test_image_exts_lowercase_with_dot():
     assert ".avif" in IMAGE_EXTS
     # Stored normalised (lowercase, dotted); callers lower-case suffixes.
     assert all(e.startswith(".") and e == e.lower() for e in IMAGE_EXTS)
+
+
+# ── ARASAAC attribution ──────────────────────────────────────────────────────
+
+
+def test_uses_arasaac_false_without_manifest(tmp_path):
+    img = tmp_path / "hund.png"
+    img.write_bytes(b"")
+    assert pdf_utils.uses_arasaac([img]) is False
+
+
+def test_record_then_uses_arasaac(tmp_path):
+    own = tmp_path / "mamma.jpg"
+    picto = tmp_path / "hund.png"
+    pdf_utils.record_arasaac_image(picto, 2517)
+    pdf_utils.record_arasaac_image(tmp_path / "katt.png", 7114)
+    assert pdf_utils.uses_arasaac([own, picto]) is True
+    assert pdf_utils.uses_arasaac([own]) is False
+    data = json.loads((tmp_path / pdf_utils.ARASAAC_MANIFEST).read_text())
+    assert data == {"hund.png": 2517, "katt.png": 7114}
+
+
+def test_record_arasaac_recovers_from_corrupt_manifest(tmp_path):
+    (tmp_path / pdf_utils.ARASAAC_MANIFEST).write_text("not json")
+    picto = tmp_path / "hund.png"
+    pdf_utils.record_arasaac_image(picto, 1)
+    assert pdf_utils.uses_arasaac([picto]) is True
+
+
+def test_uses_arasaac_empty_list():
+    assert pdf_utils.uses_arasaac([]) is False
+
+
+def test_carry_arasaac_record_on_rename_and_copy(tmp_path):
+    src = tmp_path / "hund.png"
+    src.write_bytes(b"x")
+    pdf_utils.record_arasaac_image(src, 5)
+
+    copy = tmp_path / "hund__2.png"
+    copy.write_bytes(b"x")
+    pdf_utils.carry_arasaac_record(src, copy)
+
+    renamed = tmp_path / "valp.png"
+    src.rename(renamed)
+    pdf_utils.carry_arasaac_record(src, renamed)
+
+    data = json.loads((tmp_path / pdf_utils.ARASAAC_MANIFEST).read_text())
+    assert data == {"hund__2.png": 5, "valp.png": 5}
+
+
+def test_carry_arasaac_record_ignores_own_images(tmp_path):
+    own = tmp_path / "mamma.jpg"
+    pdf_utils.carry_arasaac_record(own, tmp_path / "mor.jpg")
+    assert not (tmp_path / pdf_utils.ARASAAC_MANIFEST).exists()

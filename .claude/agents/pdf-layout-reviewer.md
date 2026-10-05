@@ -1,6 +1,6 @@
 ---
 name: pdf-layout-reviewer
-description: Reviews changes to PDF rendering and layout code in make_cards.py, make_lotto.py, make_tegnprotokoll.py, pdf_utils.py, or the preview renderers in app.py. Use after any edit to drawing logic, layout constants, or grid geometry.
+description: Reviews changes to PDF rendering and layout code in make_cards.py, make_lotto.py, make_tegnprotokoll.py, pdf_utils.py, or the preview renderers in gui_previews.py. Use after any edit to drawing logic, layout constants, or grid geometry.
 tools: Read, Grep, Glob, Bash
 ---
 
@@ -20,11 +20,11 @@ When reviewing any change to `_draw_card` or its equivalents:
 
 ## 2. Preview must not drift from the real PDF
 
-`app.py` renders its own preview with Pillow in pixels, entirely separate from the ReportLab path. To stop the two from diverging, the column counts and column fractions are **imported from the generator modules** rather than duplicated:
+`gui_previews.py` renders its own preview with Pillow in pixels, entirely separate from the ReportLab path. To stop the two from diverging, the column counts and column fractions are **imported from the generator modules** rather than duplicated:
 
-- `app.py:79` — `_PREV_COLS = make_cards.COLS`
-- `app.py:85` — `_LOTTO_PREV_COLS = make_lotto.LOTTO_COLS`
-- `app.py:97` — `_TEGN_PREV_COL_FRACS = make_tegnprotokoll.COL_FRACS`
+- `gui_previews.py` — `_PREV_COLS = make_cards.COLS`
+- `gui_previews.py` — `_LOTTO_PREV_COLS = make_lotto.LOTTO_COLS`
+- `gui_previews.py` — `_TEGN_PREV_COL_FRACS = make_tegnprotokoll.COL_FRACS`
 
 Flag as a defect any change that replaces one of these imports with a literal, or that adds a *new* shared geometry value to the preview as a hardcoded copy instead of an import. Pixel sizes, gaps, and margins (`_PREV_CARD`, `_PREV_GAP`, `_PREV_MARGIN`, …) are legitimately preview-only — those are fine as literals.
 
