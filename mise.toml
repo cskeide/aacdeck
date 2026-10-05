@@ -1,0 +1,36 @@
+# mise: pins Python to CI's version and keeps .venv in step with requirements.
+#   mise run app    # start the GUI (installs/updates deps first)
+#   mise run test   # pytest
+#   mise run lint   # ruff
+# `mise run` works without shell activation; with `mise activate`, entering the
+# project also puts .venv on PATH so plain `python app.py` works.
+
+[tools]
+python = "3.12"  # same as CI (.github/workflows/build.yml)
+
+[env]
+_.python.venv = { path = ".venv", create = true }
+
+[tasks.install]
+description = "Install runtime and dev dependencies into .venv"
+run = "python -m pip install -q --disable-pip-version-check -r requirements.txt -r requirements-dev.txt"
+
+[tasks.app]
+description = "Start the AACdeck GUI"
+depends = ["install"]
+run = "python app.py"
+
+[tasks.test]
+description = "Run the test suite"
+depends = ["install"]
+run = "python -m pytest"
+
+[tasks.lint]
+description = "Lint with ruff"
+depends = ["install"]
+run = "ruff check ."
+
+[tasks.build]
+description = "Build the standalone executable (dist/aacdeck)"
+depends = ["install"]
+run = ["python -m pip install -q --disable-pip-version-check pyinstaller", "pyinstaller --noconfirm app.spec"]

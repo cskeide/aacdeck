@@ -8,13 +8,16 @@ Python desktop tool that generates print-ready A4 PDFs for AAC/ASK (alternativ o
 
 ## Commands
 
-Dev work happens in a project venv at `.venv/` (gitignored). **`ruff`, `pytest`, and the runtime deps are not installed system-wide and are not on `PATH`** — always invoke them via `.venv/bin/…` or activate first with `source .venv/bin/activate`. A bare `ruff check .` fails with command-not-found.
+Dev work happens in a project venv at `.venv/` (gitignored), managed by **mise** (`mise.toml`): it pins Python **3.12 to match CI**, creates `.venv` when missing, and each task runs `install` (pip against both requirements files — a fast no-op when nothing changed) first. **`ruff`, `pytest`, and the runtime deps are not installed system-wide and are not on `PATH`** — use `mise run …`, `mise exec -- …`, or `.venv/bin/…`. A bare `ruff check .` fails with command-not-found (the maintainer's shell uses mise shims, not `mise activate`, so the venv is not on PATH there either).
 
 ```bash
-python -m venv .venv                                        # one-time; ensurepip bootstraps pip
-.venv/bin/pip install -r requirements.txt                   # PySide6, Pillow, reportlab (capped <next-major)
-.venv/bin/pip install -r requirements-dev.txt               # pytest + ruff (dev only)
-.venv/bin/pip install pyinstaller                           # only for builds; not in either requirements file
+mise run app                                                # install/refresh deps, then start the GUI
+mise run test                                               # pytest
+mise run lint                                               # ruff
+mise run build                                              # pyinstaller → dist/aacdeck (installs pyinstaller first)
+mise run install                                            # just sync .venv with requirements*.txt
+
+# Equivalent direct invocations (once .venv exists):
 
 .venv/bin/python app.py                                     # PySide6 GUI (all three tools)
 .venv/bin/python make_cards.py sessions/<name>              # ASK cards CLI (./make_cards.sh wraps this); all 3 CLIs take --lang nb|en
@@ -27,7 +30,7 @@ python -m venv .venv                                        # one-time; ensurepi
 .venv/bin/python -m pytest tests/test_pdf_utils.py::test_safe_stem_empty_falls_back_to_image  # single test
 .venv/bin/ruff check .                                      # lint (config in ruff.toml)
 
-.venv/bin/pyinstaller app.spec                              # build dist/aacdeck (onefile, GUI)
+.venv/bin/pyinstaller app.spec                              # build dist/aacdeck (onefile, GUI; pyinstaller not in requirements)
 ```
 
 Headless GUI smoke test (constructs the main window without a display):
@@ -40,7 +43,7 @@ Tests live in `tests/` (pytest, configured in `pytest.ini`); they cover the pure
 
 On Linux, PySide6 needs system Qt/XCB libs (see `.github/workflows/build.yml` for the apt-get list; on Arch these are `xcb-util-cursor` and `libxkbcommon-x11`). CI builds onefile executables for Linux/Windows/macOS on push to `main` and tags (`v*`) create a GitHub release.
 
-**CI pins Python 3.12; the local venv may be newer** (3.14 on the maintainer's machine, using PySide6's `cp310-abi3` wheel). A local pass is strong evidence but not proof — version-sensitive changes should be confirmed against CI.
+**CI pins Python 3.12, and so does `mise.toml`.** mise only creates `.venv` when it is missing, so after changing the pinned version delete `.venv` once (`rm -rf .venv && mise run install`). A local pass is strong evidence but not proof — CI also differs in OS packages (no Qt libs in the test job).
 
 There is **no version string in the source** — no `__version__`, nothing in `app.spec` or `README.md`. The git tag *is* the version, and pushing a `v*` tag is the only thing that publishes a release.
 

@@ -33,8 +33,17 @@ Both licences are non-commercial.
 
 ## Running from source
 
+With [mise](https://mise.jdx.dev) installed:
+
 ```bash
-python -m venv .venv
+mise trust          # first time only
+mise run app        # installs Python 3.12 + dependencies into .venv, then starts the app
+```
+
+`mise run test`, `mise run lint` and `mise run build` work the same way. Without mise:
+
+```bash
+python3.12 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 .venv/bin/python app.py
 ```
@@ -49,7 +58,7 @@ Each tool also has a command-line version (add `--lang en` for English PDF text)
 .venv/bin/python make_tegnprotokoll.py tegnprotokoll-sessions/bade  # → output/bade_tegnprotokoll.pdf
 ```
 
-Build the standalone app with `pip install pyinstaller && pyinstaller app.spec` (output: `dist/aacdeck`). See [CLAUDE.md](CLAUDE.md) for development details.
+Build the standalone app with `mise run build` (output: `dist/aacdeck`). See [CLAUDE.md](CLAUDE.md) for development details.
 
 ## License
 
