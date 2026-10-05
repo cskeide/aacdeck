@@ -13,11 +13,13 @@ Everything runs out of `.venv/`. The runtime deps are **not** installed system-w
 ls .venv/bin/python
 ```
 
-If it's missing, bootstrap before doing anything else — the repo's own PostToolUse hooks shell out to `.venv/bin/ruff`, so a missing venv also breaks every `.py` edit:
+If it's missing, bootstrap before doing anything else — the repo's own PostToolUse hooks shell out to `.venv/bin/ruff`, so a missing venv also breaks every `.py` edit. `mise.toml` creates it on Python 3.12 (CI's version) and installs both requirements files:
 
 ```bash
-python -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-dev.txt
+mise run install
 ```
+
+If `mise` reports the config as untrusted, that's a one-time `mise trust` for the user to approve — ask rather than running it yourself. Without mise: `python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-dev.txt`.
 
 ## 2. Launch the GUI
 
