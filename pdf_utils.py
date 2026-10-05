@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 from typing import NamedTuple
 
+from i18n import t
 from PIL import Image
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -225,10 +226,15 @@ def stem_to_label(stem: str) -> str:
 # ARASAAC pictograms are CC BY-NC-SA 4.0, which requires crediting the author
 # and owner on anything that reproduces them.
 
-ARASAAC_CREDIT = (
-    "Piktogrammer: Sergio Palao / ARASAAC (arasaac.org), "
-    "Aragón-regjeringen — CC BY-NC-SA 4.0"
-)
+
+def arasaac_credit() -> str:
+    """The ARASAAC credit line in the current language."""
+    return t(
+        "Pictograms: Sergio Palao / ARASAAC (arasaac.org), "
+        "Government of Aragón — CC BY-NC-SA 4.0"
+    )
+
+
 CREDIT_FONT_PT = 7
 
 # Per-session sidecar listing the filenames that were downloaded from ARASAAC,

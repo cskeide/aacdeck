@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Callable, Optional, Set
 
 from pdf_utils import record_arasaac_image, safe_stem
+from i18n import t
 from PySide6.QtCore import QSize, Qt, QThread, Signal
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
@@ -114,16 +115,16 @@ class PictogramSearchPanel(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        sep_lbl = QLabel("Search Pictograms")
+        sep_lbl = QLabel(t("Search Pictograms"))
         sep_lbl.setStyleSheet("font-weight: bold; font-size: 13px; padding: 8px 0 2px;")
         layout.addWidget(sep_lbl)
 
         search_row = QHBoxLayout()
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("Search in English or Norwegian…")
+        self.search_input.setPlaceholderText(t("Search in English or Norwegian…"))
         self.search_input.returnPressed.connect(self._do_search)
         search_row.addWidget(self.search_input, stretch=1)
-        self.search_btn = QPushButton("Search")
+        self.search_btn = QPushButton(t("Search"))
         self.search_btn.clicked.connect(self._do_search)
         search_row.addWidget(self.search_btn)
         layout.addLayout(search_row)
@@ -143,7 +144,7 @@ class PictogramSearchPanel(QWidget):
         self.result_list.customContextMenuRequested.connect(self._result_context_menu)
         layout.addWidget(self.result_list, stretch=1)
 
-        self.add_btn = QPushButton("Add selected to session")
+        self.add_btn = QPushButton(t("Add selected to session"))
         self.add_btn.setEnabled(False)
         self.add_btn.clicked.connect(self._add_selected)
         layout.addWidget(self.add_btn)
@@ -157,7 +158,7 @@ class PictogramSearchPanel(QWidget):
         self.search_btn.setEnabled(False)
         self.result_list.clear()
         self.add_btn.setEnabled(False)
-        self.search_status.setText("Searching…")
+        self.search_status.setText(t("Searching…"))
 
         worker = ArasaacSearchWorker(query)
         worker.results.connect(self._on_search_results)
@@ -174,9 +175,9 @@ class PictogramSearchPanel(QWidget):
     def _on_search_results(self, results: list) -> None:
         self.result_list.clear()
         if not results:
-            self.search_status.setText("No results.")
+            self.search_status.setText(t("No results."))
             return
-        self.search_status.setText(f"{len(results)} result(s)")
+        self.search_status.setText(t("{n} result(s)", n=len(results)))
         for r in results:
             item = QListWidgetItem(r["label"])
             item.setData(Qt.ItemDataRole.UserRole, r)
@@ -190,7 +191,7 @@ class PictogramSearchPanel(QWidget):
         self.add_btn.setEnabled(True)
 
     def _on_search_error(self, msg: str) -> None:
-        self.search_status.setText(f"Error: {msg}")
+        self.search_status.setText(t("Error: {msg}", msg=msg))
 
     # ── Download ───────────────────────────────────────────────────────────────
 
@@ -199,7 +200,7 @@ class PictogramSearchPanel(QWidget):
         if item is None:
             return
         menu = QMenu(self)
-        add_action = menu.addAction("Add to session")
+        add_action = menu.addAction(t("Add to session"))
         if menu.exec(self.result_list.mapToGlobal(pos)) == add_action:
             session = self._session_or_warn()
             if session is not None:
@@ -218,7 +219,7 @@ class PictogramSearchPanel(QWidget):
         session = self._session_getter()
         if session is None:
             QMessageBox.warning(
-                self, "No session", "Please select or create a session first."
+                self, t("No session"), t("Please select or create a session first.")
             )
         return session
 
@@ -235,5 +236,5 @@ class PictogramSearchPanel(QWidget):
         self.downloaded.emit(path)
 
     def _on_download_error(self, msg: str) -> None:
-        self.search_status.setText(f"Download error: {msg}")
+        self.search_status.setText(t("Download error: {msg}", msg=msg))
 

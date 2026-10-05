@@ -9,6 +9,7 @@ from typing import List, Optional, Set
 
 from PIL import Image, ImageDraw
 from pdf_utils import IMAGE_EXTS, open_file, safe_stem, stem_to_label, to_rgb
+from i18n import t
 from PySide6.QtCore import QSize, Qt, QThread, Signal
 from PySide6.QtGui import QIcon, QImage, QPixmap
 from PySide6.QtWidgets import (
@@ -206,7 +207,7 @@ class TegnprotokollTab(QWidget):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(0, 0, 6, 0)
 
-        lbl = QLabel("Sessions")
+        lbl = QLabel(t("Sessions"))
         lbl.setStyleSheet("font-weight: bold; font-size: 13px; padding: 2px 0;")
         layout.addWidget(lbl)
 
@@ -214,26 +215,26 @@ class TegnprotokollTab(QWidget):
         self.tegn_session_list.currentItemChanged.connect(self._on_session_changed)
         layout.addWidget(self.tegn_session_list, stretch=1)
 
-        new_btn = QPushButton("+ New session")
+        new_btn = QPushButton(t("+ New session"))
         new_btn.clicked.connect(self._new_session)
         layout.addWidget(new_btn)
 
         sep_row = QHBoxLayout()
-        sep = QLabel("Search Signs")
+        sep = QLabel(t("Search Signs"))
         sep.setStyleSheet("font-weight: bold; font-size: 13px; padding: 8px 0 2px;")
         sep_row.addWidget(sep, stretch=1)
-        refresh_btn = QPushButton("Refresh database")
-        refresh_btn.setToolTip("Clear cache and reload sign data")
+        refresh_btn = QPushButton(t("Refresh database"))
+        refresh_btn.setToolTip(t("Clear cache and reload sign data"))
         refresh_btn.clicked.connect(self._refresh_tegnbank)
         sep_row.addWidget(refresh_btn)
         layout.addLayout(sep_row)
 
         search_row = QHBoxLayout()
         self.tegn_search_input = QLineEdit()
-        self.tegn_search_input.setPlaceholderText("Search for signs…")
+        self.tegn_search_input.setPlaceholderText(t("Search for signs…"))
         self.tegn_search_input.returnPressed.connect(self._do_search)
         search_row.addWidget(self.tegn_search_input, stretch=1)
-        self.tegn_search_btn = QPushButton("Search")
+        self.tegn_search_btn = QPushButton(t("Search"))
         self.tegn_search_btn.clicked.connect(self._do_search)
         search_row.addWidget(self.tegn_search_btn)
         layout.addLayout(search_row)
@@ -254,7 +255,7 @@ class TegnprotokollTab(QWidget):
         )
         layout.addWidget(self.tegn_result_list, stretch=2)
 
-        self.tegn_add_btn = QPushButton("Add selected to session")
+        self.tegn_add_btn = QPushButton(t("Add selected to session"))
         self.tegn_add_btn.setEnabled(False)
         self.tegn_add_btn.clicked.connect(self._add_selected)
         layout.addWidget(self.tegn_add_btn)
@@ -265,7 +266,7 @@ class TegnprotokollTab(QWidget):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(4, 0, 4, 0)
 
-        self.tegn_session_title = QLabel("Select a session")
+        self.tegn_session_title = QLabel(t("Select a session"))
         self.tegn_session_title.setStyleSheet(
             "font-weight: bold; font-size: 13px; padding: 2px 0;"
         )
@@ -289,7 +290,7 @@ class TegnprotokollTab(QWidget):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(4, 0, 0, 0)
 
-        lbl = QLabel("Page preview")
+        lbl = QLabel(t("Page preview"))
         lbl.setStyleSheet("font-weight: bold; font-size: 13px; padding: 2px 0;")
         layout.addWidget(lbl)
 
@@ -298,7 +299,7 @@ class TegnprotokollTab(QWidget):
         self.tegn_preview_scroll.setAlignment(
             Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop
         )
-        self.tegn_preview_label = QLabel("No session selected")
+        self.tegn_preview_label = QLabel(t("No session selected"))
         self.tegn_preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.tegn_preview_label.setWordWrap(True)
         self.tegn_preview_scroll.setWidget(self.tegn_preview_label)
@@ -306,14 +307,14 @@ class TegnprotokollTab(QWidget):
 
         nav = QHBoxLayout()
         nav.setContentsMargins(0, 2, 0, 0)
-        self.tegn_prev_btn = QPushButton("← Prev")
+        self.tegn_prev_btn = QPushButton(t("← Prev"))
         self.tegn_prev_btn.setEnabled(False)
         self.tegn_prev_btn.clicked.connect(self._prev_page)
         nav.addWidget(self.tegn_prev_btn)
         self.tegn_page_label = QLabel("")
         self.tegn_page_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         nav.addWidget(self.tegn_page_label, stretch=1)
-        self.tegn_next_btn = QPushButton("Next →")
+        self.tegn_next_btn = QPushButton(t("Next →"))
         self.tegn_next_btn.setEnabled(False)
         self.tegn_next_btn.clicked.connect(self._next_page)
         nav.addWidget(self.tegn_next_btn)
@@ -328,13 +329,13 @@ class TegnprotokollTab(QWidget):
         self.tegn_progress.setVisible(False)
         layout.addWidget(self.tegn_progress)
 
-        self.tegn_generate_btn = QPushButton("Generate Sign Protocol PDF")
+        self.tegn_generate_btn = QPushButton(t("Generate Sign Protocol PDF"))
         self.tegn_generate_btn.setEnabled(False)
         self.tegn_generate_btn.setMinimumWidth(160)
         self.tegn_generate_btn.clicked.connect(self._generate_pdf)
         layout.addWidget(self.tegn_generate_btn)
 
-        self.tegn_open_btn = QPushButton("Open PDF")
+        self.tegn_open_btn = QPushButton(t("Open PDF"))
         self.tegn_open_btn.setVisible(False)
         self.tegn_open_btn.clicked.connect(lambda: self._open_pdf(self._last_pdf))
         layout.addWidget(self.tegn_open_btn)
@@ -371,10 +372,10 @@ class TegnprotokollTab(QWidget):
             self.current_session = None
             self._descriptions = {}
             self._session_items = []
-            self.tegn_session_title.setText("Select a session")
+            self.tegn_session_title.setText(t("Select a session"))
             self.tegn_signs_list.clear()
             self.tegn_generate_btn.setEnabled(False)
-            self.tegn_preview_label.setText("No session selected")
+            self.tegn_preview_label.setText(t("No session selected"))
             self._preview_page = 0
             self._preview_total_pages = 1
             self._update_nav_buttons()
@@ -389,8 +390,8 @@ class TegnprotokollTab(QWidget):
     def _new_session(self) -> None:
         name, ok = QInputDialog.getText(
             self,
-            "New sign protocol session",
-            "Session name (e.g. 2026-04-signs-home):",
+            t("New sign protocol session"),
+            t("Session name (e.g. 2026-04-signs-home):"),
         )
         if not ok or not name.strip():
             return
@@ -399,8 +400,8 @@ class TegnprotokollTab(QWidget):
         if new_path.exists():
             QMessageBox.warning(
                 self,
-                "Already exists",
-                f"Session '{name}' already exists.",
+                t("Already exists"),
+                t("Session '{name}' already exists.", name=name),
             )
             return
         new_path.mkdir(parents=True)
@@ -434,7 +435,7 @@ class TegnprotokollTab(QWidget):
                 "utf-8",
             )
         except Exception as exc:
-            self.tegn_status.setText(f"Warning: could not save descriptions — {exc}")
+            self.tegn_status.setText(t("Warning: could not save descriptions — {error}", error=exc))
 
     # ── Sign / image management ─────────────────────────────────────────────────
 
@@ -474,15 +475,15 @@ class TegnprotokollTab(QWidget):
             return
         img_path: Path = item.data(Qt.ItemDataRole.UserRole)
         menu = QMenu(self)
-        rename_action = menu.addAction("Rename…")
-        desc_action = menu.addAction("Set description…")
-        remove_action = menu.addAction("Remove from session")
+        rename_action = menu.addAction(t("Rename…"))
+        desc_action = menu.addAction(t("Set description…"))
+        remove_action = menu.addAction(t("Remove from session"))
         action = menu.exec(self.tegn_signs_list.mapToGlobal(pos))
 
         if action == rename_action:
             current_label = stem_to_label(img_path.stem)
             new_label, ok = QInputDialog.getText(
-                self, "Rename sign", "Sign label:", text=current_label
+                self, t("Rename sign"), t("Sign label:"), text=current_label
             )
             if ok and new_label.strip() and new_label.strip() != current_label:
                 old_stem = img_path.stem
@@ -491,8 +492,8 @@ class TegnprotokollTab(QWidget):
                 if new_path.exists():
                     QMessageBox.warning(
                         self,
-                        "Name taken",
-                        f"'{new_path.name}' already exists.",
+                        t("Name taken"),
+                        t("'{name}' already exists.", name=new_path.name),
                     )
                 else:
                     img_path.rename(new_path)
@@ -506,8 +507,8 @@ class TegnprotokollTab(QWidget):
             current_desc = self._descriptions.get(stem, "")
             new_desc, ok = QInputDialog.getText(
                 self,
-                "Set description",
-                "Describe how the child uses the sign:",
+                t("Set description"),
+                t("Describe how the child uses the sign:"),
                 text=current_desc,
             )
             if ok:
@@ -522,8 +523,8 @@ class TegnprotokollTab(QWidget):
             if (
                 QMessageBox.question(
                     self,
-                    "Remove sign",
-                    f"Delete '{img_path.name}' from this session?",
+                    t("Remove sign"),
+                    t("Delete '{name}' from this session?", name=img_path.name),
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 )
                 == QMessageBox.StandardButton.Yes
@@ -554,7 +555,7 @@ class TegnprotokollTab(QWidget):
             old = self._preview_worker
             self._stale_preview_workers.add(old)
             old.finished.connect(lambda w=old: self._stale_preview_workers.discard(w))
-        self.tegn_preview_label.setText("Rendering…")
+        self.tegn_preview_label.setText(t("Rendering…"))
         worker = TegnprotokollPreviewWorker(
             self._session_items, self._descriptions.copy(), self._preview_page
         )
@@ -568,7 +569,7 @@ class TegnprotokollTab(QWidget):
         self.tegn_prev_btn.setEnabled(page > 0)
         self.tegn_next_btn.setEnabled(page < total - 1)
         self.tegn_page_label.setText(
-            f"Page {page + 1} / {total}" if self._session_items else ""
+            t("Page {page} / {total}", page=page + 1, total=total) if self._session_items else ""
         )
 
     def _prev_page(self) -> None:
@@ -585,7 +586,7 @@ class TegnprotokollTab(QWidget):
 
     def _on_preview_ready(self, image: QImage) -> None:
         if image.isNull():
-            self.tegn_preview_label.setText("No signs in session")
+            self.tegn_preview_label.setText(t("No signs in session"))
             return
         pixmap = QPixmap.fromImage(image)  # main thread — safe here
         max_w = max(100, self.tegn_preview_scroll.width() - 20)
@@ -602,7 +603,7 @@ class TegnprotokollTab(QWidget):
 
         tegnbanken.invalidate_cache()
         self.tegn_search_status.setText(
-            "Cache cleared — next search will fetch fresh data."
+            t("Cache cleared — next search will fetch fresh data.")
         )
 
     def _do_search(self) -> None:
@@ -612,7 +613,7 @@ class TegnprotokollTab(QWidget):
         self.tegn_search_btn.setEnabled(False)
         self.tegn_result_list.clear()
         self.tegn_add_btn.setEnabled(False)
-        self.tegn_search_status.setText("Searching…")
+        self.tegn_search_status.setText(t("Searching…"))
 
         worker = TegnprotokollSearchWorker(query)
         worker.results.connect(self._on_search_results)
@@ -629,9 +630,9 @@ class TegnprotokollTab(QWidget):
     def _on_search_results(self, results: list) -> None:
         self.tegn_result_list.clear()
         if not results:
-            self.tegn_search_status.setText("No results.")
+            self.tegn_search_status.setText(t("No results."))
             return
-        self.tegn_search_status.setText(f"{len(results)} result(s)")
+        self.tegn_search_status.setText(t("{n} result(s)", n=len(results)))
         for r in results:
             has_img = bool(r.get("foto") or r.get("la_hend"))
             label = ("\u2713 " if has_img else "\u25a1 ") + r["word"]
@@ -645,7 +646,7 @@ class TegnprotokollTab(QWidget):
         self.tegn_add_btn.setEnabled(True)
 
     def _on_search_error(self, msg: str) -> None:
-        self.tegn_search_status.setText(f"Error: {msg}")
+        self.tegn_search_status.setText(t("Error: {msg}", msg=msg))
 
     # ── Add signs ──────────────────────────────────────────────────────────────
 
@@ -654,12 +655,12 @@ class TegnprotokollTab(QWidget):
         if item is None:
             return
         menu = QMenu(self)
-        add_action = menu.addAction("Add to session")
+        add_action = menu.addAction(t("Add to session"))
         action = menu.exec(self.tegn_result_list.mapToGlobal(pos))
         if action == add_action:
             if self.current_session is None:
                 QMessageBox.warning(
-                    self, "No session", "Please select or create a session first."
+                    self, t("No session"), t("Please select or create a session first.")
                 )
                 return
             self._start_download(item.data(Qt.ItemDataRole.UserRole))
@@ -668,8 +669,8 @@ class TegnprotokollTab(QWidget):
         if self.current_session is None:
             QMessageBox.warning(
                 self,
-                "No session",
-                "Please select or create a session first.",
+                t("No session"),
+                t("Please select or create a session first."),
             )
             return
         selected = self.tegn_result_list.selectedItems()
@@ -692,7 +693,7 @@ class TegnprotokollTab(QWidget):
         self._load_session_items()
 
     def _on_download_error(self, msg: str) -> None:
-        self.tegn_status.setText(f"Download error: {msg}")
+        self.tegn_status.setText(t("Download error: {msg}", msg=msg))
 
     # ── PDF generation ─────────────────────────────────────────────────────────
 
@@ -702,7 +703,7 @@ class TegnprotokollTab(QWidget):
         self.tegn_generate_btn.setEnabled(False)
         self.tegn_open_btn.setVisible(False)
         self.tegn_progress.setVisible(True)
-        self.tegn_status.setText("Generating PDF…")
+        self.tegn_status.setText(t("Generating PDF…"))
 
         worker = TegnprotokollPdfWorker(self.current_session)
         worker.done.connect(self._on_generate_done)
@@ -717,14 +718,14 @@ class TegnprotokollTab(QWidget):
         self.tegn_generate_btn.setEnabled(bool(self._session_items))
         self._last_pdf = pdf_path
         self.tegn_open_btn.setVisible(True)
-        self.tegn_status.setText(f"Saved: {Path(pdf_path).name}")
+        self.tegn_status.setText(t("Saved: {path}", path=Path(pdf_path).name))
 
     def _on_generate_error(self, msg: str) -> None:
         self._pdf_worker = None
         self.tegn_progress.setVisible(False)
         self.tegn_generate_btn.setEnabled(bool(self._session_items))
-        self.tegn_status.setText(f"Error: {msg}")
-        QMessageBox.critical(self, "Generation failed", msg)
+        self.tegn_status.setText(t("Error: {msg}", msg=msg))
+        QMessageBox.critical(self, t("Generation failed"), msg)
 
     def _open_pdf(self, path: Optional[str]) -> None:
         if path:

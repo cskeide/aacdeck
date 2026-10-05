@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+from i18n import parse_cli_lang
 from PIL import Image
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
@@ -18,7 +19,7 @@ from pdf_utils import (
     fit_label,
     compute_grid,
     stem_to_label,
-    ARASAAC_CREDIT,
+    arasaac_credit,
     draw_credit,
     uses_arasaac,
 )
@@ -135,7 +136,7 @@ def make_cards(
     )
 
     # Only credit ARASAAC when the session actually holds a downloaded pictogram.
-    credit = ARASAAC_CREDIT if uses_arasaac(images) else None
+    credit = arasaac_credit() if uses_arasaac(images) else None
 
     c = canvas.Canvas(str(output_path), pagesize=A4)
 
@@ -166,12 +167,16 @@ def make_cards(
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
+    try:
+        args = parse_cli_lang(sys.argv[1:])
+    except ValueError as exc:
+        sys.exit(f"Error: {exc}")
+    if len(args) != 1:
         sys.exit(
-            "Usage:   python make_cards.py <session_folder>\n"
+            "Usage:   python make_cards.py [--lang nb|en] <session_folder>\n"
             "Example: python make_cards.py sessions/2024-01-familie"
         )
     try:
-        make_cards(sys.argv[1])
+        make_cards(args[0])
     except ValueError as exc:
         sys.exit(f"Error: {exc}")

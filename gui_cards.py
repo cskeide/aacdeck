@@ -10,6 +10,7 @@ from typing import List, Optional, Set
 import make_cards
 from PIL import Image
 from pdf_utils import IMAGE_EXTS, carry_arasaac_record, open_file, stem_to_label, to_rgb
+from i18n import t
 from PySide6.QtCore import QSize, Qt, QThread, Signal
 from PySide6.QtGui import QIcon, QImage, QPixmap
 from PySide6.QtWidgets import (
@@ -155,7 +156,7 @@ class CardsTab(QWidget):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(0, 0, 6, 0)
 
-        lbl = QLabel("Sessions")
+        lbl = QLabel(t("Sessions"))
         lbl.setStyleSheet("font-weight: bold; font-size: 13px; padding: 2px 0;")
         layout.addWidget(lbl)
 
@@ -163,7 +164,7 @@ class CardsTab(QWidget):
         self.session_list.currentItemChanged.connect(self._on_session_changed)
         layout.addWidget(self.session_list, stretch=1)
 
-        btn = QPushButton("+ New session")
+        btn = QPushButton(t("+ New session"))
         btn.clicked.connect(self._new_session)
         layout.addWidget(btn)
 
@@ -181,7 +182,7 @@ class CardsTab(QWidget):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(4, 0, 4, 0)
 
-        self.session_title = QLabel("Select a session")
+        self.session_title = QLabel(t("Select a session"))
         self.session_title.setStyleSheet(
             "font-weight: bold; font-size: 13px; padding: 2px 0;"
         )
@@ -192,7 +193,7 @@ class CardsTab(QWidget):
         self.image_list.customContextMenuRequested.connect(self._image_context_menu)
         layout.addWidget(self.image_list, stretch=1)
 
-        add_btn = QPushButton("Add images…")
+        add_btn = QPushButton(t("Add images…"))
         add_btn.clicked.connect(self._add_images_dialog)
         layout.addWidget(add_btn)
         return panel
@@ -203,7 +204,7 @@ class CardsTab(QWidget):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(4, 0, 0, 0)
 
-        lbl = QLabel("Page preview")
+        lbl = QLabel(t("Page preview"))
         lbl.setStyleSheet("font-weight: bold; font-size: 13px; padding: 2px 0;")
         layout.addWidget(lbl)
 
@@ -212,7 +213,7 @@ class CardsTab(QWidget):
         self.preview_scroll.setAlignment(
             Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop
         )
-        self.preview_label = QLabel("No session selected")
+        self.preview_label = QLabel(t("No session selected"))
         self.preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.preview_label.setWordWrap(True)
         self.preview_scroll.setWidget(self.preview_label)
@@ -221,14 +222,14 @@ class CardsTab(QWidget):
         # Page navigation bar
         nav = QHBoxLayout()
         nav.setContentsMargins(0, 2, 0, 0)
-        self.prev_page_btn = QPushButton("← Prev")
+        self.prev_page_btn = QPushButton(t("← Prev"))
         self.prev_page_btn.setEnabled(False)
         self.prev_page_btn.clicked.connect(self._prev_preview_page)
         nav.addWidget(self.prev_page_btn)
         self.page_counter_label = QLabel("")
         self.page_counter_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         nav.addWidget(self.page_counter_label, stretch=1)
-        self.next_page_btn = QPushButton("Next →")
+        self.next_page_btn = QPushButton(t("Next →"))
         self.next_page_btn.setEnabled(False)
         self.next_page_btn.clicked.connect(self._next_preview_page)
         nav.addWidget(self.next_page_btn)
@@ -250,12 +251,12 @@ class CardsTab(QWidget):
         self.progress_bar.setMaximumWidth(160)
         layout.addWidget(self.progress_bar)
 
-        self.open_btn = QPushButton("Open PDF")
+        self.open_btn = QPushButton(t("Open PDF"))
         self.open_btn.setVisible(False)
         self.open_btn.clicked.connect(self._open_pdf)
         layout.addWidget(self.open_btn)
 
-        self.generate_btn = QPushButton("Generate PDF")
+        self.generate_btn = QPushButton(t("Generate PDF"))
         self.generate_btn.setEnabled(False)
         self.generate_btn.setMinimumWidth(120)
         self.generate_btn.clicked.connect(self._generate_pdf)
@@ -290,10 +291,10 @@ class CardsTab(QWidget):
     def _on_session_changed(self, current: QListWidgetItem, _previous) -> None:
         if current is None:
             self.current_session = None
-            self.session_title.setText("Select a session")
+            self.session_title.setText(t("Select a session"))
             self.image_list.clear()
             self.generate_btn.setEnabled(False)
-            self.preview_label.setText("No session selected")
+            self.preview_label.setText(t("No session selected"))
             self._preview_images = []
             self._preview_page = 0
             self._preview_total_pages = 1
@@ -307,7 +308,7 @@ class CardsTab(QWidget):
 
     def _new_session(self) -> None:
         name, ok = QInputDialog.getText(
-            self, "New session", "Session name (e.g. 2026-04-skole):"
+            self, t("New session"), t("Session name (e.g. 2026-04-skole):")
         )
         if not ok or not name.strip():
             return
@@ -315,7 +316,7 @@ class CardsTab(QWidget):
         new_path = SESSIONS_DIR / name
         if new_path.exists():
             QMessageBox.warning(
-                self, "Already exists", f"Session '{name}' already exists."
+                self, t("Already exists"), t("Session '{name}' already exists.", name=name)
             )
             return
         new_path.mkdir(parents=True)
@@ -363,7 +364,7 @@ class CardsTab(QWidget):
     def _on_images_dropped(self, paths: List[Path]) -> None:
         if self.current_session is None:
             QMessageBox.warning(
-                self, "No session", "Please select or create a session first."
+                self, t("No session"), t("Please select or create a session first.")
             )
             return
         for src in paths:
@@ -382,14 +383,14 @@ class CardsTab(QWidget):
     def _add_images_dialog(self) -> None:
         if self.current_session is None:
             QMessageBox.warning(
-                self, "No session", "Please select or create a session first."
+                self, t("No session"), t("Please select or create a session first.")
             )
             return
         files, _ = QFileDialog.getOpenFileNames(
             self,
-            "Add images",
+            t("Add images"),
             str(Path.home()),
-            "Images (*.jpg *.jpeg *.png *.webp *.avif)",
+            t("Images (*.jpg *.jpeg *.png *.webp *.avif)"),
         )
         if files:
             self._on_images_dropped([Path(f) for f in files])
@@ -400,21 +401,21 @@ class CardsTab(QWidget):
             return
         img_path: Path = item.data(Qt.ItemDataRole.UserRole)
         menu = QMenu(self)
-        rename_action = menu.addAction("Rename…")
-        duplicate_action = menu.addAction("Duplicate")
-        remove_action = menu.addAction("Remove from session")
+        rename_action = menu.addAction(t("Rename…"))
+        duplicate_action = menu.addAction(t("Duplicate"))
+        remove_action = menu.addAction(t("Remove from session"))
         action = menu.exec(self.image_list.mapToGlobal(pos))
         if action == rename_action:
             current_label = stem_to_label(img_path.stem)
             new_label, ok = QInputDialog.getText(
-                self, "Rename card", "Card label:", text=current_label
+                self, t("Rename card"), t("Card label:"), text=current_label
             )
             if ok and new_label.strip() and new_label.strip() != current_label:
                 new_stem = new_label.strip().replace(" ", "_")
                 new_path = img_path.with_stem(new_stem)
                 if new_path.exists():
                     QMessageBox.warning(
-                        self, "Name taken", f"'{new_path.name}' already exists."
+                        self, t("Name taken"), t("'{name}' already exists.", name=new_path.name)
                     )
                 else:
                     img_path.rename(new_path)
@@ -435,8 +436,8 @@ class CardsTab(QWidget):
             if (
                 QMessageBox.question(
                     self,
-                    "Remove image",
-                    f"Delete '{img_path.name}' from this session?",
+                    t("Remove image"),
+                    t("Delete '{name}' from this session?", name=img_path.name),
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 )
                 == QMessageBox.StandardButton.Yes
@@ -453,7 +454,7 @@ class CardsTab(QWidget):
         self.generate_btn.setEnabled(False)
         self.open_btn.setVisible(False)
         self.progress_bar.setVisible(True)
-        self.status_label.setText("Generating PDF…")
+        self.status_label.setText(t("Generating PDF…"))
 
         worker = GenerateWorker(self.current_session)
         worker.done.connect(self._on_generate_done)
@@ -466,7 +467,7 @@ class CardsTab(QWidget):
         self._generate_worker = None
         self.progress_bar.setVisible(False)
         self.generate_btn.setEnabled(True)
-        self.status_label.setText(f"Saved: {pdf_path}")
+        self.status_label.setText(t("Saved: {path}", path=pdf_path))
         self._last_pdf = pdf_path
         self.open_btn.setVisible(True)
 
@@ -474,8 +475,8 @@ class CardsTab(QWidget):
         self._generate_worker = None
         self.progress_bar.setVisible(False)
         self.generate_btn.setEnabled(True)
-        self.status_label.setText(f"Error: {message}")
-        QMessageBox.critical(self, "Generation failed", message)
+        self.status_label.setText(t("Error: {msg}", msg=message))
+        QMessageBox.critical(self, t("Generation failed"), message)
 
     def _open_pdf(self) -> None:
         if self._last_pdf:
@@ -499,7 +500,7 @@ class CardsTab(QWidget):
             old = self._preview_worker
             self._stale_preview_workers.add(old)
             old.finished.connect(lambda w=old: self._stale_preview_workers.discard(w))
-        self.preview_label.setText("Rendering…")
+        self.preview_label.setText(t("Rendering…"))
         worker = PreviewWorker(self._preview_images, self._preview_page)
         worker.ready.connect(self._on_preview_ready)
         self._preview_worker = worker
@@ -511,7 +512,7 @@ class CardsTab(QWidget):
         self.prev_page_btn.setEnabled(page > 0)
         self.next_page_btn.setEnabled(page < total - 1)
         self.page_counter_label.setText(
-            f"Page {page + 1} / {total}" if self._preview_images else ""
+            t("Page {page} / {total}", page=page + 1, total=total) if self._preview_images else ""
         )
 
     def _prev_preview_page(self) -> None:
@@ -528,7 +529,7 @@ class CardsTab(QWidget):
 
     def _on_preview_ready(self, image: QImage) -> None:
         if image.isNull():
-            self.preview_label.setText("No cards in session")
+            self.preview_label.setText(t("No cards in session"))
             return
         pixmap = QPixmap.fromImage(image)  # main thread — safe here
         max_w = max(100, self.preview_scroll.width() - 20)

@@ -9,6 +9,7 @@ from typing import List, Optional, Set
 import make_lotto
 from PIL import Image
 from pdf_utils import IMAGE_EXTS, carry_arasaac_record, open_file, stem_to_label, to_rgb
+from i18n import t
 from PySide6.QtCore import QSize, Qt, QThread, Signal
 from PySide6.QtGui import QIcon, QImage, QPixmap
 from PySide6.QtWidgets import (
@@ -109,7 +110,7 @@ class LottoTab(QWidget):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(0, 0, 6, 0)
 
-        lbl = QLabel("Sessions")
+        lbl = QLabel(t("Sessions"))
         lbl.setStyleSheet("font-weight: bold; font-size: 13px; padding: 2px 0;")
         layout.addWidget(lbl)
 
@@ -117,7 +118,7 @@ class LottoTab(QWidget):
         self.lotto_session_list.currentItemChanged.connect(self._on_session_changed)
         layout.addWidget(self.lotto_session_list, stretch=1)
 
-        new_btn = QPushButton("+ New session")
+        new_btn = QPushButton(t("+ New session"))
         new_btn.clicked.connect(self._new_session)
         layout.addWidget(new_btn)
 
@@ -131,7 +132,7 @@ class LottoTab(QWidget):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(4, 0, 4, 0)
 
-        self.lotto_session_title = QLabel("Select a session")
+        self.lotto_session_title = QLabel(t("Select a session"))
         self.lotto_session_title.setStyleSheet(
             "font-weight: bold; font-size: 13px; padding: 2px 0;"
         )
@@ -157,7 +158,7 @@ class LottoTab(QWidget):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(4, 0, 0, 0)
 
-        lbl = QLabel("Page preview")
+        lbl = QLabel(t("Page preview"))
         lbl.setStyleSheet("font-weight: bold; font-size: 13px; padding: 2px 0;")
         layout.addWidget(lbl)
 
@@ -166,7 +167,7 @@ class LottoTab(QWidget):
         self.lotto_preview_scroll.setAlignment(
             Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop
         )
-        self.lotto_preview_label = QLabel("No session selected")
+        self.lotto_preview_label = QLabel(t("No session selected"))
         self.lotto_preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lotto_preview_label.setWordWrap(True)
         self.lotto_preview_scroll.setWidget(self.lotto_preview_label)
@@ -174,14 +175,14 @@ class LottoTab(QWidget):
 
         nav = QHBoxLayout()
         nav.setContentsMargins(0, 2, 0, 0)
-        self.lotto_prev_btn = QPushButton("← Prev")
+        self.lotto_prev_btn = QPushButton(t("← Prev"))
         self.lotto_prev_btn.setEnabled(False)
         self.lotto_prev_btn.clicked.connect(self._prev_preview_page)
         nav.addWidget(self.lotto_prev_btn)
         self.lotto_page_label = QLabel("")
         self.lotto_page_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         nav.addWidget(self.lotto_page_label, stretch=1)
-        self.lotto_next_btn = QPushButton("Next →")
+        self.lotto_next_btn = QPushButton(t("Next →"))
         self.lotto_next_btn.setEnabled(False)
         self.lotto_next_btn.clicked.connect(self._next_preview_page)
         nav.addWidget(self.lotto_next_btn)
@@ -196,20 +197,20 @@ class LottoTab(QWidget):
         self.lotto_progress.setVisible(False)
         layout.addWidget(self.lotto_progress)
 
-        self.generate_pdfs_btn = QPushButton("Generate PDFs")
+        self.generate_pdfs_btn = QPushButton(t("Generate PDFs"))
         self.generate_pdfs_btn.setEnabled(False)
         self.generate_pdfs_btn.setMinimumWidth(140)
         self.generate_pdfs_btn.clicked.connect(self._generate_pdfs)
         layout.addWidget(self.generate_pdfs_btn)
 
         open_row = QHBoxLayout()
-        self.open_board_btn = QPushButton("Open board PDF")
+        self.open_board_btn = QPushButton(t("Open board PDF"))
         self.open_board_btn.setVisible(False)
         self.open_board_btn.clicked.connect(
             lambda: self._open_pdf(self._last_board_pdf)
         )
         open_row.addWidget(self.open_board_btn)
-        self.open_cutout_btn = QPushButton("Open cut-out PDF")
+        self.open_cutout_btn = QPushButton(t("Open cut-out PDF"))
         self.open_cutout_btn.setVisible(False)
         self.open_cutout_btn.clicked.connect(
             lambda: self._open_pdf(self._last_cutout_pdf)
@@ -247,10 +248,10 @@ class LottoTab(QWidget):
     def _on_session_changed(self, current: QListWidgetItem, _previous) -> None:
         if current is None:
             self.current_lotto_session = None
-            self.lotto_session_title.setText("Select a session")
+            self.lotto_session_title.setText(t("Select a session"))
             self.lotto_image_list.clear()
             self.generate_pdfs_btn.setEnabled(False)
-            self.lotto_preview_label.setText("No session selected")
+            self.lotto_preview_label.setText(t("No session selected"))
             self._preview_images = []
             self._preview_page = 0
             self._preview_total_pages = 1
@@ -264,7 +265,7 @@ class LottoTab(QWidget):
 
     def _new_session(self) -> None:
         name, ok = QInputDialog.getText(
-            self, "New lotto session", "Session name (e.g. 2026-04-lotto-animals):"
+            self, t("New lotto session"), t("Session name (e.g. 2026-04-lotto-animals):")
         )
         if not ok or not name.strip():
             return
@@ -272,7 +273,7 @@ class LottoTab(QWidget):
         new_path = LOTTO_SESSIONS_DIR / name
         if new_path.exists():
             QMessageBox.warning(
-                self, "Already exists", f"Session '{name}' already exists."
+                self, t("Already exists"), t("Session '{name}' already exists.", name=name)
             )
             return
         new_path.mkdir(parents=True)
@@ -324,20 +325,20 @@ class LottoTab(QWidget):
             return
         img_path: Path = item.data(Qt.ItemDataRole.UserRole)
         menu = QMenu(self)
-        rename_action = menu.addAction("Rename…")
-        remove_action = menu.addAction("Remove from session")
+        rename_action = menu.addAction(t("Rename…"))
+        remove_action = menu.addAction(t("Remove from session"))
         action = menu.exec(self.lotto_image_list.mapToGlobal(pos))
         if action == rename_action:
             current_label = stem_to_label(img_path.stem)
             new_label, ok = QInputDialog.getText(
-                self, "Rename card", "Card label:", text=current_label
+                self, t("Rename card"), t("Card label:"), text=current_label
             )
             if ok and new_label.strip() and new_label.strip() != current_label:
                 new_stem = new_label.strip().replace(" ", "_")
                 new_path = img_path.with_stem(new_stem)
                 if new_path.exists():
                     QMessageBox.warning(
-                        self, "Name taken", f"'{new_path.name}' already exists."
+                        self, t("Name taken"), t("'{name}' already exists.", name=new_path.name)
                     )
                 else:
                     img_path.rename(new_path)
@@ -347,8 +348,8 @@ class LottoTab(QWidget):
             if (
                 QMessageBox.question(
                     self,
-                    "Remove card",
-                    f"Delete '{img_path.name}' from this session?",
+                    t("Remove card"),
+                    t("Delete '{name}' from this session?", name=img_path.name),
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 )
                 == QMessageBox.StandardButton.Yes
@@ -376,7 +377,7 @@ class LottoTab(QWidget):
             old = self._preview_worker
             self._stale_preview_workers.add(old)
             old.finished.connect(lambda w=old: self._stale_preview_workers.discard(w))
-        self.lotto_preview_label.setText("Rendering…")
+        self.lotto_preview_label.setText(t("Rendering…"))
         worker = LottoPreviewWorker(self._preview_images, self._preview_page)
         worker.ready.connect(self._on_preview_ready)
         self._preview_worker = worker
@@ -388,7 +389,7 @@ class LottoTab(QWidget):
         self.lotto_prev_btn.setEnabled(page > 0)
         self.lotto_next_btn.setEnabled(page < total - 1)
         self.lotto_page_label.setText(
-            f"Page {page + 1} / {total}" if self._preview_images else ""
+            t("Page {page} / {total}", page=page + 1, total=total) if self._preview_images else ""
         )
 
     def _prev_preview_page(self) -> None:
@@ -405,7 +406,7 @@ class LottoTab(QWidget):
 
     def _on_preview_ready(self, image: QImage) -> None:
         if image.isNull():
-            self.lotto_preview_label.setText("No cards in session")
+            self.lotto_preview_label.setText(t("No cards in session"))
             return
         pixmap = QPixmap.fromImage(image)  # main thread — safe here
         max_w = max(100, self.lotto_preview_scroll.width() - 20)
@@ -430,7 +431,7 @@ class LottoTab(QWidget):
         self.open_board_btn.setVisible(False)
         self.open_cutout_btn.setVisible(False)
         self.lotto_progress.setVisible(True)
-        self.lotto_status.setText("Generating PDFs…")
+        self.lotto_status.setText(t("Generating PDFs…"))
 
         worker = LottoBoardWorker(self.current_lotto_session)
         worker.done.connect(self._on_generate_done)
@@ -448,15 +449,15 @@ class LottoTab(QWidget):
         self.open_board_btn.setVisible(True)
         self.open_cutout_btn.setVisible(True)
         self.lotto_status.setText(
-            f"Saved: {Path(board_path).name} and {Path(cutout_path).name}"
+            t("Saved: {board} and {cutout}", board=Path(board_path).name, cutout=Path(cutout_path).name)
         )
 
     def _on_generate_error(self, msg: str) -> None:
         self._board_worker = None
         self.lotto_progress.setVisible(False)
         self.generate_pdfs_btn.setEnabled(bool(self._preview_images))
-        self.lotto_status.setText(f"Error: {msg}")
-        QMessageBox.critical(self, "Generation failed", msg)
+        self.lotto_status.setText(t("Error: {msg}", msg=msg))
+        QMessageBox.critical(self, t("Generation failed"), msg)
 
     def _open_pdf(self, path: Optional[str]) -> None:
         if path:

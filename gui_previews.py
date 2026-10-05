@@ -13,7 +13,8 @@ import make_cards
 import make_lotto
 import make_tegnprotokoll
 from PIL import Image, ImageDraw, ImageFont
-from pdf_utils import ARASAAC_CREDIT, stem_to_label, to_rgb, uses_arasaac
+from pdf_utils import arasaac_credit, stem_to_label, to_rgb, uses_arasaac
+from i18n import t
 from PySide6.QtGui import QImage
 from gui_common import pillow_to_qimage
 
@@ -67,14 +68,15 @@ def _draw_preview_credit(
 ) -> None:
     """Mirror pdf_utils.draw_credit(): grey credit line in the bottom margin."""
     font = _preview_font(7)
+    credit = arasaac_credit()
     try:
-        bbox = font.getbbox(ARASAAC_CREDIT)
+        bbox = font.getbbox(credit)
         tw = bbox[2] - bbox[0]
     except AttributeError:
-        tw, _ = font.getsize(ARASAAC_CREDIT)  # type: ignore[attr-defined]
+        tw, _ = font.getsize(credit)  # type: ignore[attr-defined]
     draw.text(
         (page_w // 2 - tw // 2, page_h - margin + 2),
-        ARASAAC_CREDIT,
+        credit,
         fill=(160, 160, 160),
         font=font,
     )
@@ -228,7 +230,7 @@ def render_tegnprotokoll_preview(
     session_name = items[0].parent.name.replace("-", " ") if items else ""
     draw.text(
         (margin, margin + 4),
-        f"Sign Protocol \u2014 {session_name}",
+        t("Sign protocol — {name}", name=session_name),
         fill=(0, 0, 0),
         font=font_title,
     )
@@ -242,7 +244,7 @@ def render_tegnprotokoll_preview(
         outline=(160, 160, 160),
         width=1,
     )
-    headers = ["Sign", "Image", "How the child uses the sign"]
+    headers = [t("Sign"), t("Image"), t("How the child uses the sign")]
     hx = table_x
     for hdr, cw in zip(headers, raw_ws):
         try:
@@ -343,7 +345,7 @@ def render_tegnprotokoll_preview(
         row_y = rb
 
     # ── Footer ────────────────────────────────────────────────────────────────
-    footer_text = "Statped / tegnbanken.no \u2014 CC BY-NC-ND 4.0"
+    footer_text = t("Illustrations: Statped / tegnbanken.no — CC BY-NC-ND 4.0")
     try:
         bbox = font_foot.getbbox(footer_text)
         fw = bbox[2] - bbox[0]

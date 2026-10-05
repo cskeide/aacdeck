@@ -10,9 +10,12 @@ Produces a 3-column A4 table ready to print:
 Attribution footer on every page:
     "Illustrasjoner: Statped / tegnbanken.no — CC BY-NC-ND 4.0"
 
+Title, column headings and footer follow the i18n language (Norwegian by
+default).
+
 Usage (CLI)::
 
-    python make_tegnprotokoll.py <session-folder>
+    python make_tegnprotokoll.py [--lang nb|en] <session-folder>
 
 Usage (library)::
 
@@ -28,6 +31,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+from i18n import parse_cli_lang, t
 from PIL import Image
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
@@ -265,7 +269,7 @@ def make_tegnprotokoll(
         c.line(table_x + w_word, y0, table_x + w_word, table_top)
         c.line(table_x + w_word + w_img, y0, table_x + w_word + w_img, table_top)
 
-        headers = ["Tegn", "Bilde", "Hvordan barnet bruker tegnet"]
+        headers = [t("Sign"), t("Image"), t("How the child uses the sign")]
         cws = col_widths
         hx = table_x
         c.setFont(bold_font, HEADER_FONT_PT)
@@ -277,7 +281,7 @@ def make_tegnprotokoll(
         return y0  # next row starts here
 
     def draw_footer() -> None:
-        text = "Illustrasjoner: Statped / tegnbanken.no \u2014 CC BY-NC-ND 4.0"
+        text = t("Illustrations: Statped / tegnbanken.no — CC BY-NC-ND 4.0")
         c.setFont(reg_font, FOOTER_FONT_PT)
         c.setFillColorRGB(0.55, 0.55, 0.55)
         fw = c.stringWidth(text, reg_font, FOOTER_FONT_PT)
@@ -294,7 +298,7 @@ def make_tegnprotokoll(
         c.setFont(bold_font, 13)
         c.setFillColorRGB(0, 0, 0)
         display = session_name.replace("-", " ")
-        c.drawString(PAGE_MARGIN, page_top - 8 * mm, f"Tegnprotokoll \u2014 {display}")
+        c.drawString(PAGE_MARGIN, page_top - 8 * mm, t("Sign protocol — {name}", name=display))
 
         table_top = page_top - TITLE_HEIGHT
         return draw_header(table_top)
@@ -333,7 +337,8 @@ def make_tegnprotokoll(
 # ── CLI ────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <session-folder>")
+    args = parse_cli_lang(sys.argv[1:])
+    if len(args) != 1:
+        print(f"Usage: {sys.argv[0]} [--lang nb|en] <session-folder>")
         sys.exit(1)
-    make_tegnprotokoll(sys.argv[1])
+    make_tegnprotokoll(args[0])

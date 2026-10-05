@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from typing import NamedTuple, Optional
 
+from i18n import parse_cli_lang
 from PIL import Image
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
@@ -18,7 +19,7 @@ from pdf_utils import (
     fit_label,
     compute_grid,
     stem_to_label,
-    ARASAAC_CREDIT,
+    arasaac_credit,
     draw_credit,
 )
 
@@ -143,7 +144,7 @@ def _render(
     for i, entry in enumerate(decoded):
         page_pos = i % cards_per_page
         if page_pos == 0 and i > 0:
-            draw_credit(c, ARASAAC_CREDIT, page_w, PAGE_MARGIN)
+            draw_credit(c, arasaac_credit(), page_w, PAGE_MARGIN)
             c.showPage()
 
         row = page_pos // LOTTO_COLS
@@ -157,7 +158,7 @@ def _render(
         )
 
     # Lotto sessions are filled from ARASAAC, so every page carries its credit.
-    draw_credit(c, ARASAAC_CREDIT, page_w, PAGE_MARGIN)
+    draw_credit(c, arasaac_credit(), page_w, PAGE_MARGIN)
     c.save()
     pages = (len(decoded) - 1) // cards_per_page + 1
     mode = "cut-out" if cutout_mode else "board"
@@ -226,11 +227,12 @@ def make_board_and_cutout_pdf(
 
 # ── CLI ────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
+    args = parse_cli_lang(sys.argv[1:])
+    if len(args) != 1:
         sys.exit(
-            "Usage:   python make_lotto.py <session_folder>\n"
+            "Usage:   python make_lotto.py [--lang nb|en] <session_folder>\n"
             "Example: python make_lotto.py lotto-sessions/2026-04-test"
         )
-    board, cutout = make_board_and_cutout_pdf(sys.argv[1])
+    board, cutout = make_board_and_cutout_pdf(args[0])
     print(f"Board:  {board}")
     print(f"Cutout: {cutout}")
