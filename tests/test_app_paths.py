@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-pytest.importorskip("PySide6.QtWidgets")
+pytest.importorskip("PySide6.QtWidgets", exc_type=ImportError)
 
 import gui_common
 
