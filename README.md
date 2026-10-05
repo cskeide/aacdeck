@@ -1,4 +1,4 @@
-# ASK Card Generator
+# AACdeck
 
 Generates print-ready A4 PDFs of picture cards for AAC/ASK (alternativ og supplerende kommunikasjon). Place your images in a session folder, run the script, and get a PDF ready to print, laminate, and cut.
 
@@ -24,7 +24,7 @@ Build a single-file executable with PyInstaller:
 
 ```bash
 pyinstaller app.spec
-# output: dist/ask-card-generator
+# output: dist/aacdeck
 ```
 
 ## CLI

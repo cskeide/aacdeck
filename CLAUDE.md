@@ -27,7 +27,7 @@ python -m venv .venv                                        # one-time; ensurepi
 .venv/bin/python -m pytest tests/test_pdf_utils.py::test_safe_stem_empty_falls_back_to_image  # single test
 .venv/bin/ruff check .                                      # lint (config in ruff.toml)
 
-.venv/bin/pyinstaller app.spec                              # build dist/ask-card-generator (onefile, GUI)
+.venv/bin/pyinstaller app.spec                              # build dist/aacdeck (onefile, GUI)
 ```
 
 Headless GUI smoke test (constructs the main window without a display):
@@ -56,7 +56,7 @@ There is **no version string in the source** — no `__version__`, nothing in `a
 - Sessions live in `sessions/`, `lotto-sessions/`, `tegnprotokoll-sessions/` (one folder per session), conventionally named `YYYY-MM-description` (e.g. `2026-03-familie`). `output/` is auto-created; PDFs land there named after the session.
 - **Only `sessions/` survives a fresh clone** (via `.gitkeep`) — `.gitignore` excludes `*-sessions/*/`, so the lotto and tegnprotokoll collection dirs simply don't exist until something makes them. The GUI creates whichever it needs on tab init and `_refresh_sessions()` returns early when one is absent, so this is invisible in normal use. The CLIs only `mkdir` `output/`, so a CLI-first workflow means creating the session folder yourself (`mkdir -p lotto-sessions/2026-04-test`) — otherwise `make_cards.py`/`make_lotto.py` raise `ValueError: '…' is not a directory`. `make_tegnprotokoll.py` has no such guard and fails later on the empty-session check instead.
 - Supported images: `.jpg`, `.jpeg`, `.png`, `.webp`, `.avif`. Filename stem → card label via `stem_to_label()` (underscores → spaces, `__N` duplicate counter stripped) — used uniformly by all three generators and the GUI previews/lists, so labels match everywhere. All images are decoded by Pillow and converted to RGB PNG before reaching ReportLab.
-- Tegnbanken data is cached at `~/.cache/ask-generator/tegnbanken/data.xml` (7-day TTL), not in the project dir.
+- Tegnbanken data is cached at `~/.cache/aacdeck/tegnbanken/data.xml` (7-day TTL), not in the project dir.
 - Optional `descriptions.json` sidecar in a tegnprotokoll session maps `{"stem": "description text"}`.
 
 ## Gotchas

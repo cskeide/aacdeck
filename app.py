@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ASK Card Generator — desktop GUI
+"""AACdeck — desktop GUI
 
 Dependencies: PySide6, Pillow, reportlab  (see requirements.txt)
 """
@@ -1900,7 +1900,7 @@ class TegnprotokollTab(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("ASK Card Generator")
+        self.setWindowTitle("AACdeck")
         self.resize(1100, 720)
 
         self.current_session: Optional[Path] = None
@@ -2368,7 +2368,7 @@ def _make_app_icon() -> QIcon:
 
 def main() -> None:
     app = QApplication(sys.argv)
-    app.setApplicationName("ASK Card Generator")
+    app.setApplicationName("AACdeck")
     icon = _make_app_icon()
     app.setWindowIcon(icon)
     window = MainWindow()

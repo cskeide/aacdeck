@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller spec for ASK Card Generator.
+# PyInstaller spec for AACdeck.
 # Build with:  pyinstaller app.spec
-# Output:      dist/ask-card-generator  (Linux) / dist/ask-card-generator.exe (Windows)
+# Output:      dist/aacdeck  (Linux) / dist/aacdeck.exe (Windows)
 
 a = Analysis(
     ["app.py"],
@@ -41,7 +41,7 @@ exe = EXE(
     a.scripts,
     a.binaries,
     a.datas,
-    name="ask-card-generator",
+    name="aacdeck",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

@@ -1,4 +1,4 @@
-"""Shared utilities for ASK Card Generator PDF modules.
+"""Shared utilities for AACdeck PDF modules.
 
 Centralises helpers that were previously duplicated across make_cards.py,
 make_lotto.py, make_tegnprotokoll.py, and app.py.

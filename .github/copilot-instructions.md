@@ -1,4 +1,4 @@
-# ASK Card Generator
+# AACdeck
 
 Python desktop tool that turns folders of images into print-ready A4 PDFs for AAC/ASK (alternativ og supplerende kommunikasjon) materials in Norwegian: picture cards, lotto boards, and sign-language protocols.
 
