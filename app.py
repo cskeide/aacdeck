@@ -13,11 +13,15 @@ import sys
 
 from PIL import Image, ImageDraw
 from pdf_utils import open_file
-from PySide6.QtCore import Qt
+from i18n import LANGUAGES, get_language, language_from_locale, set_language, t
+from PySide6.QtCore import QLocale, QSettings, Qt
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
+    QComboBox,
+    QHBoxLayout,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QTabWidget,
     QVBoxLayout,
@@ -44,14 +48,47 @@ class MainWindow(QMainWindow):
         tabs = QTabWidget()
         outer.addWidget(tabs, stretch=1)
 
-        data_btn = QPushButton("Open data folder")
+        corner = QWidget()
+        corner_layout = QHBoxLayout(corner)
+        corner_layout.setContentsMargins(0, 0, 0, 0)
+        self.lang_combo = QComboBox()
+        for code, name in LANGUAGES.items():
+            self.lang_combo.addItem(name, code)
+        self.lang_combo.setCurrentIndex(self.lang_combo.findData(get_language()))
+        self.lang_combo.currentIndexChanged.connect(self._on_language_chosen)
+        corner_layout.addWidget(self.lang_combo)
+        data_btn = QPushButton(t("Open data folder"))
         data_btn.setToolTip(str(BASE_DIR))
         data_btn.clicked.connect(lambda: open_file(str(BASE_DIR)))
-        tabs.setCornerWidget(data_btn, Qt.Corner.TopRightCorner)
+        corner_layout.addWidget(data_btn)
+        tabs.setCornerWidget(corner, Qt.Corner.TopRightCorner)
 
-        tabs.addTab(CardsTab(), "Cards")
-        tabs.addTab(LottoTab(), "Lotto")
-        tabs.addTab(TegnprotokollTab(), "Sign Protocol")
+        tabs.addTab(CardsTab(), t("Cards"))
+        tabs.addTab(LottoTab(), t("Lotto"))
+        tabs.addTab(TegnprotokollTab(), t("Sign Protocol"))
+
+    def _on_language_chosen(self, _index: int) -> None:
+        # Text is built once at startup, so a new language applies on restart.
+        code = self.lang_combo.currentData()
+        _settings().setValue("language", code)
+        if code != get_language():
+            QMessageBox.information(
+                self,
+                t("Restart needed", lang=code),
+                t("Restart AACdeck to switch language.", lang=code),
+            )
+
+
+def _settings() -> QSettings:
+    return QSettings("AACdeck", "AACdeck")
+
+
+def _startup_language() -> str:
+    """Saved choice if valid, else Norwegian on a Norwegian system, else English."""
+    saved = _settings().value("language")
+    if saved in LANGUAGES:
+        return saved
+    return language_from_locale(QLocale.system().name())
 
 
 # ── Entry point ────────────────────────────────────────────────────────────────
@@ -89,7 +126,6 @@ def _make_app_icon() -> QIcon:
     return icon
 
 
-
 def main() -> None:
     migrate_legacy_data()
     BASE_DIR.mkdir(parents=True, exist_ok=True)
@@ -97,6 +133,7 @@ def main() -> None:
     app.setApplicationName("AACdeck")
     icon = _make_app_icon()
     app.setWindowIcon(icon)
+    set_language(_startup_language())
     window = MainWindow()
     window.show()
     sys.exit(app.exec())

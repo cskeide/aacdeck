@@ -153,3 +153,15 @@ def test_make_cards_with_arasaac_manifest(tmp_path):
     record_arasaac_image(session / "bilde_3.png", 42)
     out = make_cards.make_cards(str(session), output_dir=tmp_path / "out")
     _assert_pdf(out)
+
+
+def test_make_tegnprotokoll_in_english(tmp_path):
+    import i18n
+
+    session = _make_session(tmp_path, "tegn_en", n=3)
+    try:
+        i18n.set_language("en")
+        out = make_tegnprotokoll.make_tegnprotokoll(str(session), output_dir=tmp_path / "out")
+    finally:
+        i18n.set_language(i18n.DEFAULT_LANGUAGE)
+    _assert_pdf(out)
