@@ -29,7 +29,7 @@ _LAHEND_BASE = "https://www.minetegn.no/Tegnbanken-2016/data/hendene/"
 _TIMEOUT = 15  # seconds per request
 
 # Local disk cache – lives in user's home dir, max 7 days old before refresh
-_CACHE_DIR = Path.home() / ".cache" / "ask-generator" / "tegnbanken"
+_CACHE_DIR = Path.home() / ".cache" / "aacdeck" / "tegnbanken"
 _CACHE_FILE = _CACHE_DIR / "data.xml"
 _CACHE_MAX_AGE_DAYS = 7
 
@@ -53,7 +53,7 @@ def _fetch_xml() -> bytes:
     req = urllib.request.Request(
         _DATA_URL,
         headers={
-            "User-Agent": "Mozilla/5.0 (ask-card-generator)",
+            "User-Agent": "Mozilla/5.0 (aacdeck)",
             "Accept": "text/xml, application/xml, */*",
         },
     )
@@ -165,7 +165,7 @@ def fetch_image(filename: str, image_type: str = "foto") -> bytes:
     url = base + filename
     req = urllib.request.Request(
         url,
-        headers={"User-Agent": "Mozilla/5.0 (ask-card-generator)"},
+        headers={"User-Agent": "Mozilla/5.0 (aacdeck)"},
     )
     with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
         return resp.read()

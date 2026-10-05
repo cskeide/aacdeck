@@ -18,7 +18,7 @@ There is **no version string anywhere in the source** — no `__version__`, noth
 2. `build` — PyInstaller onefile on Linux, Windows, and macOS
 3. `release` — only on `refs/tags/*`; downloads all three artifacts and creates a GitHub Release via `softprops/action-gh-release`
 
-The release job publishes `ask-card-generator` (Linux), `ask-card-generator.exe` (Windows), and `ask-card-generator-macos`. It supplies **no release body**, so notes must be added afterwards.
+The release job publishes `aacdeck` (Linux), `aacdeck.exe` (Windows), and `aacdeck-macos`. It supplies **no release body**, so notes must be added afterwards.
 
 ## Steps
 

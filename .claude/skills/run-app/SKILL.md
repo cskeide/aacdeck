@@ -1,6 +1,6 @@
 ---
 name: run-app
-description: Start the ASK Card Generator GUI, or run one of the three generator CLIs, with venv bootstrap and Qt/display checks. Use when asked to run, start, open, launch, or smoke-test the app.
+description: Start the AACdeck GUI, or run one of the three generator CLIs, with venv bootstrap and Qt/display checks. Use when asked to run, start, open, launch, or smoke-test the app.
 ---
 
 Launch this project. The GUI is a PySide6 desktop app — it paints into a native window on the user's display, it does not serve HTTP, and it cannot be shown in the Browser pane or any preview panel. Don't add a `launch.json` entry for it or try to `preview_start` it.

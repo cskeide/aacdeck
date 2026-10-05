@@ -37,11 +37,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact: ask-card-generator
+            artifact: aacdeck
           - os: windows-latest
-            artifact: ask-card-generator.exe
+            artifact: aacdeck.exe
           - os: macos-latest
-            artifact: ask-card-generator
+            artifact: aacdeck
 
     runs-on: ${{ matrix.os }}
 
@@ -74,7 +74,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ask-card-generator-${{ runner.os }}
+          name: aacdeck-${{ runner.os }}
           path: dist/${{ matrix.artifact }}
           if-no-files-found: error
 
@@ -89,28 +89,28 @@ jobs:
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
-          name: ask-card-generator-Linux
+          name: aacdeck-Linux
           path: dist/linux
 
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
-          name: ask-card-generator-Windows
+          name: aacdeck-Windows
           path: dist/windows
 
       - name: Download macOS artifact
         uses: actions/download-artifact@v4
         with:
-          name: ask-card-generator-macOS
+          name: aacdeck-macOS
           path: dist/macos
 
       - name: Rename macOS artifact
-        run: mv dist/macos/ask-card-generator dist/macos/ask-card-generator-macos
+        run: mv dist/macos/aacdeck dist/macos/aacdeck-macos
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/linux/ask-card-generator
-            dist/windows/ask-card-generator.exe
-            dist/macos/ask-card-generator-macos
+            dist/linux/aacdeck
+            dist/windows/aacdeck.exe
+            dist/macos/aacdeck-macos
