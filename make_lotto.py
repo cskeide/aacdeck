@@ -18,10 +18,10 @@ from pdf_utils import (
     fit_label,
     compute_grid,
     stem_to_label,
+    ARASAAC_CREDIT,
+    draw_credit,
 )
 
-# Alias kept for any external callers
-_to_rgb = to_rgb
 
 # ── Layout constants ───────────────────────────────────────────────────────────
 LOTTO_COLS = 4
@@ -143,6 +143,7 @@ def _render(
     for i, entry in enumerate(decoded):
         page_pos = i % cards_per_page
         if page_pos == 0 and i > 0:
+            draw_credit(c, ARASAAC_CREDIT, page_w, PAGE_MARGIN)
             c.showPage()
 
         row = page_pos // LOTTO_COLS
@@ -155,6 +156,8 @@ def _render(
             c, x, y, card_size, image_area_h, label_area_h, font, entry, cutout_mode
         )
 
+    # Lotto sessions are filled from ARASAAC, so every page carries its credit.
+    draw_credit(c, ARASAAC_CREDIT, page_w, PAGE_MARGIN)
     c.save()
     pages = (len(decoded) - 1) // cards_per_page + 1
     mode = "cut-out" if cutout_mode else "board"

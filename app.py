@@ -18,12 +18,16 @@ import make_cards
 import make_lotto
 import make_tegnprotokoll
 from PIL import Image, ImageDraw, ImageFont
-from pdf_utils import IMAGE_EXTS, to_rgb, safe_stem, stem_to_label, open_file
-
-
-def _to_rgb(img: Image.Image) -> Image.Image:
-    """Convert any Pillow image to RGB, handling palette+transparency correctly."""
-    return to_rgb(img)
+from pdf_utils import (
+    ARASAAC_CREDIT,
+    IMAGE_EXTS,
+    open_file,
+    record_arasaac_image,
+    safe_stem,
+    stem_to_label,
+    to_rgb,
+    uses_arasaac,
+)
 
 
 def _pillow_to_qimage(img: Image.Image) -> "QImage":
@@ -122,6 +126,24 @@ def _preview_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     return ImageFont.load_default()
 
 
+def _draw_preview_credit(
+    draw: ImageDraw.ImageDraw, page_w: int, page_h: int, margin: int
+) -> None:
+    """Mirror pdf_utils.draw_credit(): grey credit line in the bottom margin."""
+    font = _preview_font(7)
+    try:
+        bbox = font.getbbox(ARASAAC_CREDIT)
+        tw = bbox[2] - bbox[0]
+    except AttributeError:
+        tw, _ = font.getsize(ARASAAC_CREDIT)  # type: ignore[attr-defined]
+    draw.text(
+        (page_w // 2 - tw // 2, page_h - margin + 2),
+        ARASAAC_CREDIT,
+        fill=(160, 160, 160),
+        font=font,
+    )
+
+
 def _preview_cards_per_page() -> int:
     card, gap, margin, cols = _PREV_CARD, _PREV_GAP, _PREV_MARGIN, _PREV_COLS
     page_w = cols * card + (cols - 1) * gap + 2 * margin
@@ -185,7 +207,7 @@ def render_page_preview(images: List[Path], page_index: int = 0) -> QImage:
         pad = 3
         iw, ih = card - 2 * pad, card - label_h - pad
         try:
-            thumb = _to_rgb(Image.open(img_path))
+            thumb = to_rgb(Image.open(img_path))
             thumb.thumbnail((iw, ih), Image.LANCZOS)
             page.paste(
                 thumb,
@@ -197,6 +219,8 @@ def render_page_preview(images: List[Path], page_index: int = 0) -> QImage:
         except Exception:
             pass
 
+    if uses_arasaac(images):
+        _draw_preview_credit(draw, page_w, page_h, margin)
     return _pillow_to_qimage(page)
 
 
@@ -334,7 +358,7 @@ def render_tegnprotokoll_preview(
         pad = 4
         avail_w, avail_h = w_img - 2 * pad, row_h - 2 * pad
         try:
-            thumb = _to_rgb(Image.open(img_path))
+            thumb = to_rgb(Image.open(img_path))
             thumb.thumbnail((avail_w, avail_h), Image.LANCZOS)
             page.paste(
                 thumb,
@@ -440,7 +464,7 @@ def render_lotto_preview(images: List[Path], page_index: int = 0) -> QImage:
         img_area_h = card - label_h - pad  # height from cy to start of label
         iw, ih = card - 2 * pad, img_area_h
         try:
-            thumb = _to_rgb(Image.open(img_path))
+            thumb = to_rgb(Image.open(img_path))
             thumb.thumbnail((iw, ih), Image.LANCZOS)
             page.paste(
                 thumb,
@@ -475,6 +499,7 @@ def render_lotto_preview(images: List[Path], page_index: int = 0) -> QImage:
             font=font,
         )
 
+    _draw_preview_credit(draw, page_w, page_h, margin)
     return _pillow_to_qimage(page)
 
 
@@ -587,6 +612,7 @@ class LottoDownloadWorker(QThread):
             if dest.exists():
                 dest = self.session_path / f"{stem}_{self.pic_id}.png"
             dest.write_bytes(data)
+            record_arasaac_image(dest, self.pic_id)
             self.done.emit(str(dest))
         except Exception as exc:
             self.error.emit(str(exc))
@@ -1059,7 +1085,7 @@ class LottoTab(QWidget):
 
     def _make_thumb(self, img_path: Path) -> QPixmap:
         try:
-            img = _to_rgb(Image.open(img_path))
+            img = to_rgb(Image.open(img_path))
             img.thumbnail((96, 96), Image.LANCZOS)
             buf = io.BytesIO()
             img.save(buf, format="PNG")
@@ -1624,7 +1650,7 @@ class TegnprotokollTab(QWidget):
 
     def _make_thumb(self, img_path: Path) -> QPixmap:
         try:
-            img = _to_rgb(Image.open(img_path))
+            img = to_rgb(Image.open(img_path))
             img.thumbnail((96, 96), Image.LANCZOS)
             buf = io.BytesIO()
             img.save(buf, format="PNG")

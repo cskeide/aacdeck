@@ -18,6 +18,9 @@ from pdf_utils import (
     fit_label,
     compute_grid,
     stem_to_label,
+    ARASAAC_CREDIT,
+    draw_credit,
+    uses_arasaac,
 )
 
 
@@ -30,8 +33,6 @@ LABEL_FONT_PT = 12  # points
 LABEL_PAD_V = 2.5 * mm  # vertical padding above/below label text
 IMAGE_PAD = 2.5 * mm  # equal padding left, right, and bottom of image
 
-# Aliases kept for any code that still imports these names directly
-_to_rgb = to_rgb
 
 
 # ── Font setup ─────────────────────────────────────────────────────────────────
@@ -133,11 +134,16 @@ def make_cards(
         page_w, page_h, COLS, PAGE_MARGIN, CARD_GAP, label_area_h
     )
 
+    # Only credit ARASAAC when the session actually holds a downloaded pictogram.
+    credit = ARASAAC_CREDIT if uses_arasaac(images) else None
+
     c = canvas.Canvas(str(output_path), pagesize=A4)
 
     for i, img_path in enumerate(images):
         page_pos = i % cards_per_page
         if page_pos == 0 and i > 0:
+            if credit:
+                draw_credit(c, credit, page_w, PAGE_MARGIN)
             c.showPage()
 
         row = page_pos // COLS
@@ -148,6 +154,8 @@ def make_cards(
 
         _draw_card(c, x, y, card_size, image_area_h, label_area_h, font, img_path)
 
+    if credit:
+        draw_credit(c, credit, page_w, PAGE_MARGIN)
     c.save()
     pages = (len(images) - 1) // cards_per_page + 1
     print(
