@@ -139,15 +139,14 @@ class CardsTab(QWidget):
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 4, 0, 0)
+        layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(6)
         splitter = QSplitter(Qt.Orientation.Horizontal)
         layout.addWidget(splitter, stretch=1)
         splitter.addWidget(self._build_session_panel())
         splitter.addWidget(self._build_image_panel())
         splitter.addWidget(self._build_preview_panel())
-        splitter.setSizes([280, 440, 320])
-        layout.addWidget(self._build_bottom_bar())
+        splitter.setSizes([300, 490, 300])
 
     def _build_session_panel(self) -> QWidget:
         panel = QWidget()
@@ -200,7 +199,7 @@ class CardsTab(QWidget):
 
     def _build_preview_panel(self) -> QWidget:
         panel = QWidget()
-        panel.setMinimumWidth(180)
+        panel.setMinimumWidth(200)
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(4, 0, 0, 0)
 
@@ -234,34 +233,27 @@ class CardsTab(QWidget):
         self.next_page_btn.clicked.connect(self._next_preview_page)
         nav.addWidget(self.next_page_btn)
         layout.addLayout(nav)
-        return panel
-
-    def _build_bottom_bar(self) -> QWidget:
-        bar = QWidget()
-        layout = QHBoxLayout(bar)
-        layout.setContentsMargins(0, 4, 0, 0)
 
         self.status_label = QLabel("")
         self.status_label.setWordWrap(True)
-        layout.addWidget(self.status_label, stretch=1)
+        layout.addWidget(self.status_label)
 
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 0)  # indeterminate spinner
         self.progress_bar.setVisible(False)
-        self.progress_bar.setMaximumWidth(160)
         layout.addWidget(self.progress_bar)
-
-        self.open_btn = QPushButton(t("Open PDF"))
-        self.open_btn.setVisible(False)
-        self.open_btn.clicked.connect(self._open_pdf)
-        layout.addWidget(self.open_btn)
 
         self.generate_btn = QPushButton(t("Generate PDF"))
         self.generate_btn.setEnabled(False)
         self.generate_btn.setMinimumWidth(120)
         self.generate_btn.clicked.connect(self._generate_pdf)
         layout.addWidget(self.generate_btn)
-        return bar
+
+        self.open_btn = QPushButton(t("Open PDF"))
+        self.open_btn.setVisible(False)
+        self.open_btn.clicked.connect(self._open_pdf)
+        layout.addWidget(self.open_btn)
+        return panel
 
     # ── Session management ─────────────────────────────────────────────────────
 
