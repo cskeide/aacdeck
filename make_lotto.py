@@ -13,7 +13,7 @@ from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 
 from pdf_utils import (
-    IMAGE_EXTS,
+    session_images,
     to_rgb,
     register_nordic_bold_font,
     fit_label,
@@ -174,13 +174,7 @@ def _prepare(
     output_dir: Optional[Path],
 ) -> tuple[Path, list[_Decoded], Path, str]:
     """Validate the session, decode its images once, and set up the output dir."""
-    session_path = Path(session_path_str).resolve()
-    if not session_path.is_dir():
-        raise ValueError(f"'{session_path_str}' is not a directory.")
-
-    images = sorted(p for p in session_path.iterdir() if p.suffix.lower() in IMAGE_EXTS)
-    if not images:
-        raise ValueError(f"No images found in '{session_path_str}'.")
+    session_path, images = session_images(session_path_str)
 
     if output_dir is None:
         output_dir = Path(__file__).resolve().parent / "output"
@@ -227,12 +221,18 @@ def make_board_and_cutout_pdf(
 
 # ── CLI ────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    args = parse_cli_lang(sys.argv[1:])
+    try:
+        args = parse_cli_lang(sys.argv[1:])
+    except ValueError as exc:
+        sys.exit(f"Error: {exc}")
     if len(args) != 1:
         sys.exit(
             "Usage:   python make_lotto.py [--lang nb|en] <session_folder>\n"
             "Example: python make_lotto.py lotto-sessions/2026-04-test"
         )
-    board, cutout = make_board_and_cutout_pdf(args[0])
+    try:
+        board, cutout = make_board_and_cutout_pdf(args[0])
+    except ValueError as exc:
+        sys.exit(f"Error: {exc}")
     print(f"Board:  {board}")
     print(f"Cutout: {cutout}")

@@ -39,7 +39,7 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
 from pdf_utils import (
-    IMAGE_EXTS,
+    session_images,
     to_rgb,
     register_nordic_bold_font,
     register_nordic_regular_font,
@@ -223,7 +223,7 @@ def make_tegnprotokoll(
     Returns the output :class:`~pathlib.Path`.
     Raises :exc:`ValueError` on invalid input (empty session, bad path, etc.).
     """
-    session_path = Path(session_path_str).resolve()
+    session_path, images = session_images(session_path_str)
     if output_dir is None:
         output_dir = Path(__file__).resolve().parent / "output"
     output_dir = Path(output_dir)
@@ -237,11 +237,6 @@ def make_tegnprotokoll(
             descriptions = json.loads(desc_file.read_text("utf-8"))
         except Exception as exc:
             print(f"  Warning: could not parse {desc_file.name}: {exc}")
-
-    # Collect images
-    images = sorted(p for p in session_path.iterdir() if p.suffix.lower() in IMAGE_EXTS)
-    if not images:
-        raise ValueError(f"No images found in {session_path}")
 
     bold_font = _register_bold_font()
     reg_font = _register_regular_font()
@@ -337,8 +332,16 @@ def make_tegnprotokoll(
 # ── CLI ────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    args = parse_cli_lang(sys.argv[1:])
+    try:
+        args = parse_cli_lang(sys.argv[1:])
+    except ValueError as exc:
+        sys.exit(f"Error: {exc}")
     if len(args) != 1:
-        print(f"Usage: {sys.argv[0]} [--lang nb|en] <session-folder>")
-        sys.exit(1)
-    make_tegnprotokoll(args[0])
+        sys.exit(
+            "Usage:   python make_tegnprotokoll.py [--lang nb|en] <session_folder>\n"
+            "Example: python make_tegnprotokoll.py tegnprotokoll-sessions/2026-04-test"
+        )
+    try:
+        make_tegnprotokoll(args[0])
+    except ValueError as exc:
+        sys.exit(f"Error: {exc}")

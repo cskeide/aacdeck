@@ -7,6 +7,8 @@ generator is run against it.  Output is asserted to be a valid, non-empty PDF.
 
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -145,6 +147,14 @@ def test_make_tegnprotokoll_rejects_empty_session(tmp_path):
         make_tegnprotokoll.make_tegnprotokoll(str(empty), output_dir=tmp_path / "out")
 
 
+def test_make_tegnprotokoll_rejects_missing_dir(tmp_path):
+    out = tmp_path / "out"
+    with pytest.raises(ValueError, match="does not exist"):
+        make_tegnprotokoll.make_tegnprotokoll(str(tmp_path / "nope"), output_dir=out)
+    # Validation happens before any side effects.
+    assert not out.exists()
+
+
 def test_make_cards_with_arasaac_manifest(tmp_path):
     # A session mixing own photos with a recorded pictogram gets the credit path.
     from pdf_utils import record_arasaac_image
@@ -165,3 +175,33 @@ def test_make_tegnprotokoll_in_english(tmp_path):
     finally:
         i18n.set_language(i18n.DEFAULT_LANGUAGE)
     _assert_pdf(out)
+
+
+# ── CLI entry points ─────────────────────────────────────────────────────────
+
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
+@pytest.mark.parametrize(
+    "script", ["make_cards.py", "make_lotto.py", "make_tegnprotokoll.py"]
+)
+@pytest.mark.parametrize("problem", ["missing", "empty", "usage"])
+def test_cli_errors_exit_cleanly(tmp_path, script, problem):
+    # All three CLIs report bad input as a one-line error, never a traceback.
+    if problem == "missing":
+        args = [str(tmp_path / "nope")]
+    elif problem == "empty":
+        (tmp_path / "empty").mkdir()
+        args = [str(tmp_path / "empty")]
+    else:
+        args = []
+    result = subprocess.run(
+        [sys.executable, str(_PROJECT_ROOT / script), *args],
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+    )
+    assert result.returncode == 1
+    assert "Traceback" not in result.stderr
+    expected = {"missing": "Error: Session folder", "empty": "Error: No images", "usage": "Usage:"}
+    assert expected[problem] in result.stderr

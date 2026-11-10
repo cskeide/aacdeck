@@ -238,3 +238,31 @@ def test_carry_arasaac_record_ignores_own_images(tmp_path):
     own = tmp_path / "mamma.jpg"
     pdf_utils.carry_arasaac_record(own, tmp_path / "mor.jpg")
     assert not (tmp_path / pdf_utils.ARASAAC_MANIFEST).exists()
+
+
+# ── session_images ───────────────────────────────────────────────────────────
+
+
+def test_session_images_returns_sorted_supported_images(tmp_path):
+    for name in ("b.png", "a.JPG", "notes.txt", "c.webp"):
+        (tmp_path / name).write_bytes(b"x")
+    session, images = pdf_utils.session_images(str(tmp_path))
+    assert session == tmp_path.resolve()
+    assert [p.name for p in images] == ["a.JPG", "b.png", "c.webp"]
+
+
+def test_session_images_missing_folder_hints_to_create_it(tmp_path):
+    with pytest.raises(ValueError, match="does not exist.*Create it"):
+        pdf_utils.session_images(str(tmp_path / "nope"))
+
+
+def test_session_images_rejects_file(tmp_path):
+    f = tmp_path / "file.png"
+    f.write_bytes(b"x")
+    with pytest.raises(ValueError, match="not a directory"):
+        pdf_utils.session_images(str(f))
+
+
+def test_session_images_rejects_empty_folder(tmp_path):
+    with pytest.raises(ValueError, match="No images found"):
+        pdf_utils.session_images(str(tmp_path))

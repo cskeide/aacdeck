@@ -13,7 +13,7 @@ from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 
 from pdf_utils import (
-    IMAGE_EXTS,
+    session_images,
     to_rgb,
     register_nordic_bold_font,
     fit_label,
@@ -111,13 +111,7 @@ def make_cards(
     Returns the output :class:`~pathlib.Path`.
     Raises :exc:`ValueError` on invalid input (empty session, bad path, etc.).
     """
-    session_path = Path(session_path_str).resolve()
-    if not session_path.is_dir():
-        raise ValueError(f"'{session_path_str}' is not a directory.")
-
-    images = sorted(p for p in session_path.iterdir() if p.suffix.lower() in IMAGE_EXTS)
-    if not images:
-        raise ValueError(f"No images found in '{session_path_str}'.")
+    session_path, images = session_images(session_path_str)
 
     if output_dir is None:
         output_dir = Path(__file__).resolve().parent / "output"

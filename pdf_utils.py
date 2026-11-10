@@ -23,6 +23,30 @@ from reportlab.pdfgen import canvas
 
 IMAGE_EXTS: frozenset[str] = frozenset({".jpg", ".jpeg", ".png", ".webp", ".avif"})
 
+
+def session_images(session_path_str: str) -> tuple[Path, list[Path]]:
+    """Resolve a session folder and return ``(session_path, sorted_images)``.
+
+    Raises :exc:`ValueError` if the folder is missing, is not a directory, or
+    holds no supported images. Shared by all three generators so they validate
+    (and word their errors) identically.
+    """
+    session_path = Path(session_path_str).resolve()
+    if not session_path.exists():
+        raise ValueError(
+            f"Session folder '{session_path_str}' does not exist. "
+            "Create it and add images to it first."
+        )
+    if not session_path.is_dir():
+        raise ValueError(f"'{session_path_str}' is not a directory.")
+    images = sorted(p for p in session_path.iterdir() if p.suffix.lower() in IMAGE_EXTS)
+    if not images:
+        raise ValueError(
+            f"No images found in '{session_path_str}' "
+            f"(supported: {', '.join(sorted(IMAGE_EXTS))})."
+        )
+    return session_path, images
+
 _FONT_CANDIDATES: list[str] = [
     # Linux — Liberation Sans
     "/usr/share/fonts/liberation/LiberationSans-Bold.ttf",
